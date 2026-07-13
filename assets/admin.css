@@ -1,0 +1,110 @@
+/* Admin Menu Swap — settings page styling. */
+
+.amswap-wrap #amswap-menu-list {
+	max-width: 480px;
+	margin: 20px 0 12px;
+}
+
+.amswap-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 8px 12px;
+	margin-bottom: 6px;
+	box-shadow: 0 1px 1px rgba( 0, 0, 0, 0.04 );
+}
+
+.amswap-icon {
+	display: flex;
+	align-items: center;
+	color: #50575e;
+}
+
+.amswap-icon img {
+	max-width: 20px;
+	max-height: 20px;
+	display: block;
+}
+
+.amswap-title {
+	flex: 1;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.amswap-handle {
+	cursor: grab;
+	color: #787c82;
+	margin-left: auto;
+}
+
+.ui-sortable-helper .amswap-handle {
+	cursor: grabbing;
+}
+
+/* Separator rows: slim dashed bars. */
+.amswap-separator {
+	background: #f0f0f1;
+	border-style: dashed;
+	padding: 4px 12px;
+}
+
+.amswap-sep-line {
+	flex: 1;
+	border-top: 2px solid #8c8f94;
+}
+
+.amswap-sep-label {
+	color: #646970;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.amswap-remove {
+	border: none;
+	background: transparent;
+	color: #b32d2e;
+	cursor: pointer;
+	font-size: 18px;
+	line-height: 1;
+	padding: 0 4px;
+}
+
+.amswap-remove:hover {
+	color: #8a2424;
+}
+
+/* Drop target outline while dragging. */
+.amswap-placeholder {
+	border: 2px dashed #2271b1;
+	border-radius: 4px;
+	background: #f0f6fc;
+	margin-bottom: 6px;
+	list-style: none;
+}
+
+.amswap-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 480px;
+}
+
+.amswap-actions .button .dashicons {
+	vertical-align: text-bottom;
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+#amswap-reset-form {
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid #dcdcde;
+	max-width: 480px;
+}
