@@ -98,7 +98,9 @@ class AMSwap_Admin {
 			'amswap-admin',
 			'amswapL10n',
 			array(
-				'confirmReset' => __( 'Reset the admin menu to the default WordPress order? Your saved order and custom separators will be deleted.', 'admin-menu-swap' ),
+				'confirmReset' => __( 'Reset the admin menu to the WordPress default? Your saved order, hidden items and custom separators will be deleted.', 'admin-menu-swap' ),
+				'hideLabel'    => __( 'Hide from menu', 'admin-menu-swap' ),
+				'showLabel'    => __( 'Show in menu', 'admin-menu-swap' ),
 			)
 		);
 	}
@@ -124,7 +126,11 @@ class AMSwap_Admin {
 		<div class="wrap amswap-wrap">
 			<h1><?php esc_html_e( 'Admin Menu Swap', 'admin-menu-swap' ); ?></h1>
 
-			<p><?php esc_html_e( 'Drag the items below into the order you want the admin menu to appear in. Separators can be dragged, removed and added to group items. The order applies to all users.', 'admin-menu-swap' ); ?></p>
+			<p><?php esc_html_e( 'Drag the items below into the order you want the admin menu to appear in. Use the eye button to hide an item you never use. Separators can be dragged, removed and added to group items. Both the order and the hidden items apply to all users.', 'admin-menu-swap' ); ?></p>
+
+			<p class="description amswap-note">
+				<?php esc_html_e( 'Hiding an item only takes it out of the menu — the page behind it stays reachable by its direct URL. Use user roles and capabilities to actually restrict access.', 'admin-menu-swap' ); ?>
+			</p>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-form">
 				<ul id="amswap-menu-list">
@@ -140,11 +146,12 @@ class AMSwap_Admin {
 						<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
 						<?php esc_html_e( 'Add separator', 'admin-menu-swap' ); ?>
 					</button>
-					<?php submit_button( __( 'Save menu order', 'admin-menu-swap' ), 'primary', 'submit', false ); ?>
+					<?php submit_button( __( 'Save changes', 'admin-menu-swap' ), 'primary', 'submit', false ); ?>
 				</p>
 
 				<input type="hidden" name="action" value="amswap_save" />
 				<input type="hidden" name="amswap_order" id="amswap_order" value="" />
+				<input type="hidden" name="amswap_hidden" id="amswap_hidden" value="" />
 				<input type="hidden" name="amswap_removed" id="amswap_removed" value="<?php echo esc_attr( $removed_json ); ?>" />
 				<?php wp_nonce_field( 'amswap_save' ); ?>
 			</form>
@@ -158,6 +165,8 @@ class AMSwap_Admin {
 						'icon'         => '',
 						'is_separator' => true,
 						'is_custom'    => true,
+						'is_hidden'    => false,
+						'is_protected' => false,
 					)
 				);
 				?>
@@ -166,7 +175,7 @@ class AMSwap_Admin {
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-reset-form">
 				<input type="hidden" name="action" value="amswap_reset" />
 				<?php wp_nonce_field( 'amswap_reset' ); ?>
-				<?php submit_button( __( 'Reset to default order', 'admin-menu-swap' ), 'secondary', 'submit', false ); ?>
+				<?php submit_button( __( 'Reset to default menu', 'admin-menu-swap' ), 'secondary', 'submit', false ); ?>
 			</form>
 		</div>
 		<?php
@@ -180,16 +189,21 @@ class AMSwap_Admin {
 	protected function render_item( $item ) {
 		$is_separator = ! empty( $item['is_separator'] );
 		$is_core_sep  = $is_separator && empty( $item['is_custom'] );
+		$is_hidden    = ! empty( $item['is_hidden'] );
 
 		$classes = 'amswap-item';
 		if ( $is_separator ) {
 			$classes .= ' amswap-separator';
 		}
+		if ( $is_hidden ) {
+			$classes .= ' amswap-is-hidden';
+		}
 		?>
 		<li class="<?php echo esc_attr( $classes ); ?>"
 			data-slug="<?php echo esc_attr( $item['slug'] ); ?>"
 			data-separator="<?php echo $is_separator ? '1' : '0'; ?>"
-			data-core-separator="<?php echo $is_core_sep ? '1' : '0'; ?>">
+			data-core-separator="<?php echo $is_core_sep ? '1' : '0'; ?>"
+			data-hidden="<?php echo $is_hidden ? '1' : '0'; ?>">
 			<?php if ( $is_separator ) : ?>
 				<span class="amswap-sep-line" aria-hidden="true"></span>
 				<span class="amswap-sep-label"><?php esc_html_e( 'Separator', 'admin-menu-swap' ); ?></span>
@@ -198,9 +212,45 @@ class AMSwap_Admin {
 			<?php else : ?>
 				<span class="amswap-icon"><?php echo $this->icon_html( $item['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside icon_html(). ?></span>
 				<span class="amswap-title"><?php echo esc_html( $item['title'] ); ?></span>
+				<span class="amswap-badge"><?php esc_html_e( 'Hidden', 'admin-menu-swap' ); ?></span>
+				<?php $this->render_toggle( $is_hidden, ! empty( $item['is_protected'] ) ); ?>
 			<?php endif; ?>
 			<span class="amswap-handle dashicons dashicons-menu" title="<?php esc_attr_e( 'Drag to reorder', 'admin-menu-swap' ); ?>" aria-hidden="true"></span>
 		</li>
+		<?php
+	}
+
+	/**
+	 * Render the show/hide toggle for a menu row.
+	 *
+	 * The label doubles as the state readout, so it flips with the button
+	 * rather than describing it: pressed means the item is hidden.
+	 *
+	 * @param bool $is_hidden    Whether the item is currently hidden.
+	 * @param bool $is_protected Whether the item refuses to be hidden.
+	 */
+	protected function render_toggle( $is_hidden, $is_protected ) {
+		if ( $is_protected ) {
+			$locked = __( 'Settings cannot be hidden: this plugin\'s own page lives under it.', 'admin-menu-swap' );
+			?>
+			<button type="button" class="amswap-toggle" disabled aria-label="<?php echo esc_attr( $locked ); ?>" title="<?php echo esc_attr( $locked ); ?>">
+				<span class="dashicons dashicons-lock" aria-hidden="true"></span>
+			</button>
+			<?php
+			return;
+		}
+
+		$label = $is_hidden
+			? __( 'Show in menu', 'admin-menu-swap' )
+			: __( 'Hide from menu', 'admin-menu-swap' );
+		$icon  = $is_hidden ? 'dashicons-hidden' : 'dashicons-visibility';
+		?>
+		<button type="button" class="amswap-toggle"
+			aria-pressed="<?php echo $is_hidden ? 'true' : 'false'; ?>"
+			aria-label="<?php echo esc_attr( $label ); ?>"
+			title="<?php echo esc_attr( $label ); ?>">
+			<span class="dashicons <?php echo esc_attr( $icon ); ?>" aria-hidden="true"></span>
+		</button>
 		<?php
 	}
 
@@ -234,20 +284,24 @@ class AMSwap_Admin {
 		$this->verify( 'amswap_save' );
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing -- verified in verify().
-		$order_json   = isset( $_POST['amswap_order'] ) ? wp_unslash( $_POST['amswap_order'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per entry below.
-		$removed_json = isset( $_POST['amswap_removed'] ) ? wp_unslash( $_POST['amswap_removed'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per entry below.
+		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per entry by the store.
+		$order_json   = isset( $_POST['amswap_order'] ) ? wp_unslash( $_POST['amswap_order'] ) : '';
+		$hidden_json  = isset( $_POST['amswap_hidden'] ) ? wp_unslash( $_POST['amswap_hidden'] ) : '';
+		$removed_json = isset( $_POST['amswap_removed'] ) ? wp_unslash( $_POST['amswap_removed'] ) : '';
+		// phpcs:enable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		$order   = AMSwap_Order_Store::sanitize_order( $order_json );
+		$hidden  = AMSwap_Order_Store::sanitize_hidden( $hidden_json );
 		$removed = AMSwap_Order_Store::sanitize_removed( $removed_json );
 
 		if ( empty( $order ) ) {
 			$this->redirect_with_notice( __( 'Nothing to save: the submitted menu order was empty.', 'admin-menu-swap' ), 'error' );
 		}
 
-		AMSwap_Order_Store::save( $order, $removed );
+		AMSwap_Order_Store::save( $order, $removed, $hidden );
 
-		$this->redirect_with_notice( __( 'Menu order saved.', 'admin-menu-swap' ), 'success' );
+		$this->redirect_with_notice( __( 'Menu saved.', 'admin-menu-swap' ), 'success' );
 	}
 
 	/**
@@ -258,7 +312,7 @@ class AMSwap_Admin {
 
 		AMSwap_Order_Store::reset();
 
-		$this->redirect_with_notice( __( 'Menu order reset to the WordPress default.', 'admin-menu-swap' ), 'success' );
+		$this->redirect_with_notice( __( 'Menu reset to the WordPress default.', 'admin-menu-swap' ), 'success' );
 	}
 
 	/**

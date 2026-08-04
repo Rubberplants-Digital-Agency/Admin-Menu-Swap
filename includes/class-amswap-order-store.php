@@ -20,6 +20,13 @@ class AMSwap_Order_Store {
 	const OPTION = 'amswap_menu_order';
 
 	/**
+	 * Option schema version. Bumped to 2 when the hidden list was added;
+	 * the shape is purely additive, so version 1 options are upgraded
+	 * implicitly by the wp_parse_args() in get().
+	 */
+	const SCHEMA_VERSION = 2;
+
+	/**
 	 * Maximum number of entries accepted in the order list.
 	 */
 	const MAX_ORDER_ENTRIES = 300;
@@ -28,6 +35,11 @@ class AMSwap_Order_Store {
 	 * Maximum number of entries accepted in the removed-separators list.
 	 */
 	const MAX_REMOVED_ENTRIES = 50;
+
+	/**
+	 * Maximum number of entries accepted in the hidden-items list.
+	 */
+	const MAX_HIDDEN_ENTRIES = 300;
 
 	/**
 	 * Maximum length of a single menu slug.
@@ -41,9 +53,10 @@ class AMSwap_Order_Store {
 	 */
 	public static function defaults() {
 		return array(
-			'version' => 1,
+			'version' => self::SCHEMA_VERSION,
 			'order'   => array(),
 			'removed' => array(),
+			'hidden'  => array(),
 		);
 	}
 
@@ -54,6 +67,7 @@ class AMSwap_Order_Store {
 	 *     @type int      $version Option schema version.
 	 *     @type string[] $order   Ordered top-level menu slugs, separators inline.
 	 *     @type string[] $removed Core/foreign separator slugs the user deleted.
+	 *     @type string[] $hidden  Top-level menu slugs the user switched off.
 	 * }
 	 */
 	public static function get() {
@@ -65,11 +79,10 @@ class AMSwap_Order_Store {
 
 		$saved = wp_parse_args( $saved, self::defaults() );
 
-		if ( ! is_array( $saved['order'] ) ) {
-			$saved['order'] = array();
-		}
-		if ( ! is_array( $saved['removed'] ) ) {
-			$saved['removed'] = array();
+		foreach ( array( 'order', 'removed', 'hidden' ) as $list ) {
+			if ( ! is_array( $saved[ $list ] ) ) {
+				$saved[ $list ] = array();
+			}
 		}
 
 		return $saved;
@@ -81,13 +94,15 @@ class AMSwap_Order_Store {
 	 *
 	 * @param string[] $order   Ordered menu slugs.
 	 * @param string[] $removed Removed separator slugs.
+	 * @param string[] $hidden  Hidden menu slugs.
 	 * @return bool Whether the option was updated.
 	 */
-	public static function save( $order, $removed ) {
+	public static function save( $order, $removed, $hidden = array() ) {
 		$value = array(
-			'version' => 1,
+			'version' => self::SCHEMA_VERSION,
 			'order'   => array_values( $order ),
 			'removed' => array_values( $removed ),
+			'hidden'  => array_values( $hidden ),
 		);
 
 		return update_option( self::OPTION, $value, false );
@@ -160,6 +175,50 @@ class AMSwap_Order_Store {
 			}
 
 			if ( AMSwap_Menu_Reorder::is_custom_separator( $entry ) ) {
+				continue;
+			}
+
+			if ( in_array( $entry, $clean, true ) ) {
+				continue;
+			}
+
+			$clean[] = $entry;
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Sanitize the submitted hidden-items list (JSON array of slugs).
+	 *
+	 * Separators are never accepted: custom ones are dropped by omission
+	 * from the order, core/foreign ones through the removed list. Protected
+	 * slugs are refused here as well as at apply time, so a hand-crafted
+	 * POST cannot hide the menu this plugin's own page lives under and
+	 * strand the user with no way to switch anything back on.
+	 *
+	 * Unknown slugs are inert: prepare_menu() only unsets rows that are
+	 * actually present in $menu.
+	 *
+	 * @param string $json Raw JSON string from the form.
+	 * @return string[] Clean list of hidden menu slugs.
+	 */
+	public static function sanitize_hidden( $json ) {
+		$entries = self::decode_list( $json, self::MAX_HIDDEN_ENTRIES );
+		$clean   = array();
+
+		foreach ( $entries as $entry ) {
+			$entry = self::clean_slug( $entry );
+
+			if ( '' === $entry ) {
+				continue;
+			}
+
+			if ( AMSwap_Menu_Reorder::is_custom_separator( $entry ) ) {
+				continue;
+			}
+
+			if ( AMSwap_Menu_Reorder::is_protected( $entry ) ) {
 				continue;
 			}
 

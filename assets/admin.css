@@ -1,5 +1,9 @@
 /* Admin Menu Swap — settings page styling. */
 
+.amswap-wrap .amswap-note {
+	max-width: 480px;
+}
+
 .amswap-wrap #amswap-menu-list {
 	max-width: 480px;
 	margin: 20px 0 12px;
@@ -39,6 +43,63 @@
 	cursor: grab;
 	color: #787c82;
 	margin-left: auto;
+}
+
+/* Show/hide toggle. */
+.amswap-toggle {
+	display: flex;
+	align-items: center;
+	border: none;
+	background: transparent;
+	color: #50575e;
+	cursor: pointer;
+	padding: 0 2px;
+}
+
+.amswap-toggle:hover {
+	color: #2271b1;
+}
+
+.amswap-toggle:focus {
+	box-shadow: 0 0 0 2px #2271b1;
+	border-radius: 2px;
+	outline: none;
+}
+
+.amswap-toggle[disabled] {
+	color: #a7aaad;
+	cursor: default;
+}
+
+/* Hidden rows: dimmed, struck through, badged. */
+.amswap-badge {
+	display: none;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #646970;
+	background: #f0f0f1;
+	border-radius: 2px;
+	padding: 1px 6px;
+}
+
+.amswap-is-hidden {
+	background: #f6f7f7;
+	border-style: dashed;
+}
+
+.amswap-is-hidden .amswap-badge {
+	display: inline-block;
+}
+
+.amswap-is-hidden .amswap-icon,
+.amswap-is-hidden .amswap-title {
+	opacity: 0.5;
+}
+
+.amswap-is-hidden .amswap-title {
+	text-decoration: line-through;
 }
 
 .ui-sortable-helper .amswap-handle {

@@ -1,5 +1,6 @@
 /**
- * Admin Menu Swap — sortable list, separator management, serialization.
+ * Admin Menu Swap — sortable list, separator management, show/hide
+ * toggles, serialization.
  *
  * Only the sortable() call needs jQuery (WP-bundled jquery-ui-sortable);
  * the rest is plain event handling.
@@ -52,14 +53,47 @@
 			$li.remove();
 		} );
 
-		$( '#amswap-form' ).on( 'submit', function() {
-			var order = [];
+		// Flip a row between shown and hidden. The label carries the state,
+		// so it reads as the action available next: pressed means hidden.
+		$list.on( 'click', '.amswap-toggle', function() {
+			var $button = $( this );
+			var $li     = $button.closest( 'li' );
+			var hide    = '1' !== $li.attr( 'data-hidden' );
+			var label   = hide ? window.amswapL10n.showLabel : window.amswapL10n.hideLabel;
 
+			$li.attr( 'data-hidden', hide ? '1' : '0' ).toggleClass( 'amswap-is-hidden', hide );
+
+			$button.attr( {
+				'aria-pressed': hide ? 'true' : 'false',
+				'aria-label': label,
+				title: label
+			} );
+
+			$button.find( '.dashicons' )
+				.toggleClass( 'dashicons-visibility', ! hide )
+				.toggleClass( 'dashicons-hidden', hide );
+		} );
+
+		$( '#amswap-form' ).on( 'submit', function() {
+			var order  = [];
+			var hidden = [];
+
+			// The hidden list is rebuilt from the page rather than carried
+			// forward: every hideable row is present here, unlike removed
+			// separators, whose rows are gone from the DOM.
 			$list.children( 'li[data-slug]' ).each( function() {
-				order.push( $( this ).attr( 'data-slug' ) );
+				var $li  = $( this );
+				var slug = $li.attr( 'data-slug' );
+
+				order.push( slug );
+
+				if ( '1' === $li.attr( 'data-hidden' ) ) {
+					hidden.push( slug );
+				}
 			} );
 
 			$( '#amswap_order' ).val( JSON.stringify( order ) );
+			$( '#amswap_hidden' ).val( JSON.stringify( hidden ) );
 			$( '#amswap_removed' ).val( JSON.stringify( removed ) );
 		} );
 
