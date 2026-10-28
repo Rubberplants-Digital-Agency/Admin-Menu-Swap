@@ -2,9 +2,9 @@
 Contributors: rubberplants
 Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,8 +18,12 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 * Show/hide toggle per item — hidden items keep their place in the list, so switching one back on returns it to where it was.
 * Separators are draggable too, can be removed, and new ones can be added.
 * Pick a color for the menu separators, previewed live in the admin menu.
-* One click "Reset to default menu".
-* Zero footprint until you save for the first time.
+* One click "Reset to default menu" (or "Reset to preset").
+* Presets: group rules that order a menu the plugin has never seen, including items of plugins activated later (filter `amswap_preset`, see `includes/class-amswap-preset.php`; an example ships in `presets/`).
+* Abilities for MCP clients and the Abilities REST API (WordPress 6.9+): `amswap/get-menu`, `amswap/update-menu-order`, `amswap/reset-menu-order`.
+* WP-CLI: `wp amswap list`, `wp amswap refresh`, `wp amswap reset`.
+* Can be built into a site plugin: require `admin-menu-swap.php` from the site plugin's own copy. When several copies are present, the newest one runs.
+* Without a preset, nothing changes until you save. The plugin does keep a small snapshot of the menu (option `amswap_menu_snapshot`) whenever an administrator opens wp-admin, so the abilities and WP-CLI know which items exist.
 * Uses the WordPress core `menu_order` filter — cooperates with, rather than overwrites, the admin menu.
 
 == Installation ==
@@ -32,7 +36,19 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 
 = What happens when I activate a new plugin after saving an order? =
 
-Its menu items (and its own separators) appear at the bottom of the menu until you visit Settings → Menu Order and save again, which bakes them into your order.
+Its menu items (and its own separators) appear at the bottom of the menu until you visit Settings → Menu Order and save again, which bakes them into your order. While a preset applies (nothing saved), the new items are grouped by the preset straight away.
+
+= How do presets and the saved order work together? =
+
+A preset orders the menu as long as nothing is saved. The settings page shows the preset's result; saving there turns it into your own order, which the preset no longer touches. "Reset to preset" deletes the saved order and the preset applies again.
+
+= Why does "wp amswap refresh" need --exec? =
+
+Plugins only register their admin menus in wp-admin, so WordPress has to load as if it were wp-admin: `wp amswap list --refresh --exec='define( "WP_ADMIN", true );' --user=<administrator>`. WP-CLI's own `--context=admin` builds the menu incompletely, so the command refuses it. Without a refresh the commands and abilities read the snapshot from the last time an administrator opened wp-admin.
+
+= The plugin and a site plugin both contain Admin Menu Swap. Which one runs? =
+
+The newest version; with equal versions, one of them. Copies older than 1.3.0 always run themselves, and a 1.3 copy then steps aside. Activating a pre-1.3 copy while a 1.3 copy is running fails safely (WordPress reports a fatal error and leaves it inactive): update that copy instead. Uninstalling the plugin keeps the saved order while a built-in copy is active.
 
 = Does it work on multisite? =
 
@@ -63,6 +79,14 @@ WordPress draws each menu separator as an invisible 2px line. Pick a color under
 Admin Menu Swap registers its `menu_order` filter at a very late priority, so its saved order wins. A plugin that force-disables `custom_menu_order` at an even later priority would disable sorting entirely; that is rare.
 
 == Changelog ==
+
+= 1.3.0 =
+* Added presets (filter `amswap_preset`): group rules with slug patterns, optional groups that need a plugin, and catch-alls for post types and unknown items. Without a saved order the preset is the menu; "Reset to preset" returns to it.
+* Added the abilities `amswap/get-menu`, `amswap/update-menu-order` and `amswap/reset-menu-order` for MCP clients and the Abilities REST API (WordPress 6.9+, capability `manage_options`).
+* Added the WP-CLI command `wp amswap` (list, refresh, reset).
+* The top-level menu is stored as a snapshot when an administrator opens wp-admin, so the abilities and WP-CLI know the real menu items.
+* The plugin can be built into a site plugin; when several copies are loaded, the newest one runs.
+* Uninstalling also removes the snapshot, and keeps everything while a built-in copy is still active.
 
 = 1.2.0 =
 * Added a color picker for the admin menu separators, with a live preview in the menu.

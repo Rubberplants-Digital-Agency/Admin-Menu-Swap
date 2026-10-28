@@ -94,6 +94,53 @@ class AMSwap_Order_Store {
 	}
 
 	/**
+	 * Whether an order was saved on the settings page (or through an ability).
+	 *
+	 * @return bool
+	 */
+	public static function has_saved() {
+		return is_array( get_option( self::OPTION ) );
+	}
+
+	/**
+	 * The settings that apply to the menu: the saved ones, else the preset
+	 * resolved against the menu items, else the empty defaults.
+	 *
+	 * @param array[] $items Menu items, see AMSwap_Menu_Snapshot::items_from_menu().
+	 * @return array Same shape as get(), plus:
+	 *     @type string     $source 'saved', 'preset' or 'default'.
+	 *     @type array|null $preset The resolved preset (see AMSwap_Preset::resolve()), or null without one.
+	 */
+	public static function effective( $items ) {
+		$preset   = AMSwap_Preset::get();
+		$resolved = ( null !== $preset && ! empty( $items ) ) ? AMSwap_Preset::resolve( $preset, $items ) : null;
+
+		if ( self::has_saved() ) {
+			return array(
+				'source' => 'saved',
+				'preset' => $resolved,
+			) + self::get();
+		}
+
+		if ( null !== $resolved ) {
+			return array(
+				'source'          => 'preset',
+				'preset'          => $resolved,
+				'version'         => self::SCHEMA_VERSION,
+				'order'           => $resolved['order'],
+				'removed'         => $resolved['removed'],
+				'hidden'          => $resolved['hidden'],
+				'separator_color' => $resolved['separator_color'],
+			);
+		}
+
+		return array(
+			'source' => 'default',
+			'preset' => null,
+		) + self::defaults();
+	}
+
+	/**
 	 * Persist a sanitized order. Autoload is off: the option is only
 	 * needed on admin requests.
 	 *
@@ -132,7 +179,7 @@ class AMSwap_Order_Store {
 	 * sort_menu(). Custom separators are renumbered positionally so
 	 * their IDs stay compact and unique without a persistent counter.
 	 *
-	 * @param string $json Raw JSON string from the form.
+	 * @param string|array $json Raw JSON string from the form, or a list.
 	 * @return string[] Clean, ordered list of slugs.
 	 */
 	public static function sanitize_order( $json ) {
@@ -167,7 +214,7 @@ class AMSwap_Order_Store {
 	 * arbitrary separator slugs lets third-party separators whose slug does
 	 * not start with "separator" be removed too.
 	 *
-	 * @param string $json Raw JSON string from the form.
+	 * @param string|array $json Raw JSON string from the form, or a list.
 	 * @return string[] Clean list of removed separator slugs.
 	 */
 	public static function sanitize_removed( $json ) {
@@ -207,7 +254,7 @@ class AMSwap_Order_Store {
 	 * Unknown slugs are inert: prepare_menu() only unsets rows that are
 	 * actually present in $menu.
 	 *
-	 * @param string $json Raw JSON string from the form.
+	 * @param string|array $json Raw JSON string from the form, or a list.
 	 * @return string[] Clean list of hidden menu slugs.
 	 */
 	public static function sanitize_hidden( $json ) {
@@ -290,18 +337,21 @@ class AMSwap_Order_Store {
 	}
 
 	/**
-	 * Decode a JSON list of strings, capped at $max entries.
+	 * Decode a JSON list of strings, capped at $max entries. The abilities
+	 * pass an already decoded list, which is accepted as is.
 	 *
-	 * @param string $json Raw JSON string.
-	 * @param int    $max  Maximum entries to keep.
+	 * @param string|array $json Raw JSON string, or a list.
+	 * @param int          $max  Maximum entries to keep.
 	 * @return string[]
 	 */
 	protected static function decode_list( $json, $max ) {
-		if ( ! is_string( $json ) || '' === $json ) {
+		if ( is_array( $json ) ) {
+			$list = $json;
+		} elseif ( ! is_string( $json ) || '' === $json ) {
 			return array();
+		} else {
+			$list = json_decode( $json, true );
 		}
-
-		$list = json_decode( $json, true );
 
 		if ( ! is_array( $list ) ) {
 			return array();

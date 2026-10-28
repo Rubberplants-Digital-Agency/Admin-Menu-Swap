@@ -47,10 +47,32 @@ class AMSwap_Plugin {
 	protected function boot() {
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 
-		// Everything this plugin does happens in wp-admin. This also
-		// covers admin-post.php, which runs with WP_ADMIN set, so the
-		// save/reset handlers are wired there too.
+		/**
+		 * Whether to register the amswap/* abilities (WordPress 6.9+), which
+		 * MCP clients and the Abilities REST API reach.
+		 *
+		 * @param bool $register Default true.
+		 */
+		if ( function_exists( 'wp_register_ability' ) && apply_filters( 'amswap_register_abilities', true ) ) {
+			require_once AMSWAP_PLUGIN_DIR . 'includes/class-amswap-abilities.php';
+
+			$abilities = new AMSwap_Abilities();
+			$abilities->register();
+		}
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			require_once AMSWAP_PLUGIN_DIR . 'includes/class-amswap-cli.php';
+
+			WP_CLI::add_command( 'amswap', 'AMSwap_CLI' );
+		}
+
+		// The menu itself only exists in wp-admin. This also covers
+		// admin-post.php, which runs with WP_ADMIN set, so the save/reset
+		// handlers are wired there too, and WP-CLI with WP_ADMIN defined.
 		if ( is_admin() ) {
+			$snapshot = new AMSwap_Menu_Snapshot();
+			$snapshot->register();
+
 			$this->reorder = new AMSwap_Menu_Reorder();
 			$this->reorder->register();
 

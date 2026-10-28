@@ -98,7 +98,9 @@ class AMSwap_Admin {
 			'amswap-admin',
 			'amswapL10n',
 			array(
-				'confirmReset' => __( 'Reset the admin menu to the WordPress default? Your saved order, hidden items, custom separators and separator color will be deleted.', 'admin-menu-swap' ),
+				'confirmReset' => null === AMSwap_Preset::get()
+					? __( 'Reset the admin menu to the WordPress default? Your saved order, hidden items, custom separators and separator color will be deleted.', 'admin-menu-swap' )
+					: __( 'Reset the admin menu to the preset? Your saved order, hidden items, custom separators and separator color will be deleted.', 'admin-menu-swap' ),
 				'hideLabel'    => __( 'Hide from menu', 'admin-menu-swap' ),
 				'showLabel'    => __( 'Show in menu', 'admin-menu-swap' ),
 			)
@@ -115,9 +117,11 @@ class AMSwap_Admin {
 
 		$items = AMSwap_Menu_Reorder::get_display_items();
 
-		// Carry the saved removed-separator list forward so a later save
-		// that removes nothing new does not resurrect earlier removals.
-		$saved        = AMSwap_Order_Store::get();
+		// Carry the removed-separator list forward so a later save that
+		// removes nothing new does not resurrect earlier removals. While the
+		// preset applies, this is the preset's list, so saving keeps its look.
+		$saved        = AMSwap_Menu_Reorder::current_settings();
+		$has_preset   = null !== AMSwap_Preset::get();
 		$removed_json = wp_json_encode( array_values( $saved['removed'] ) );
 		if ( ! is_string( $removed_json ) ) {
 			$removed_json = '[]';
@@ -131,6 +135,12 @@ class AMSwap_Admin {
 			<p class="description amswap-note">
 				<?php esc_html_e( 'Hiding an item only takes it out of the menu — the page behind it stays reachable by its direct URL. Use user roles and capabilities to actually restrict access.', 'admin-menu-swap' ); ?>
 			</p>
+
+			<?php if ( 'preset' === $saved['source'] ) : ?>
+				<div class="notice notice-info inline">
+					<p><?php esc_html_e( 'This menu follows the site\'s preset, which also groups the items of plugins you activate later. Saving makes this order your own; "Reset to preset" returns to the preset.', 'admin-menu-swap' ); ?></p>
+				</div>
+			<?php endif; ?>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-form">
 				<ul id="amswap-menu-list">
@@ -181,7 +191,7 @@ class AMSwap_Admin {
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-reset-form">
 				<input type="hidden" name="action" value="amswap_reset" />
 				<?php wp_nonce_field( 'amswap_reset' ); ?>
-				<?php submit_button( __( 'Reset to default menu', 'admin-menu-swap' ), 'secondary', 'submit', false ); ?>
+				<?php submit_button( $has_preset ? __( 'Reset to preset', 'admin-menu-swap' ) : __( 'Reset to default menu', 'admin-menu-swap' ), 'secondary', 'submit', false ); ?>
 			</form>
 		</div>
 		<?php
@@ -320,7 +330,10 @@ class AMSwap_Admin {
 
 		AMSwap_Order_Store::reset();
 
-		$this->redirect_with_notice( __( 'Menu reset to the WordPress default.', 'admin-menu-swap' ), 'success' );
+		$this->redirect_with_notice(
+			null === AMSwap_Preset::get() ? __( 'Menu reset to the WordPress default.', 'admin-menu-swap' ) : __( 'Menu reset to the preset.', 'admin-menu-swap' ),
+			'success'
+		);
 	}
 
 	/**

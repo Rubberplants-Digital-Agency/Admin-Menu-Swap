@@ -51,6 +51,14 @@ class AMSwap_Menu_Reorder {
 	protected $saved_order = array();
 
 	/**
+	 * The settings applied in this request (see AMSwap_Order_Store::effective()),
+	 * set on admin_menu.
+	 *
+	 * @var array|null
+	 */
+	protected static $effective = null;
+
+	/**
 	 * Hook everything up.
 	 */
 	public function register() {
@@ -72,7 +80,7 @@ class AMSwap_Menu_Reorder {
 			return;
 		}
 
-		$saved = AMSwap_Order_Store::get();
+		$saved = self::current_settings();
 
 		if ( '' === $saved['separator_color'] ) {
 			return;
@@ -91,15 +99,17 @@ class AMSwap_Menu_Reorder {
 	 * in the network admin — that menu is untouched by construction.
 	 */
 	public function prepare_menu() {
-		$saved = AMSwap_Order_Store::get();
-
-		if ( empty( $saved['order'] ) && empty( $saved['removed'] ) && empty( $saved['hidden'] ) ) {
-			return;
-		}
-
 		global $menu;
 
 		if ( ! is_array( $menu ) ) {
+			return;
+		}
+
+		// The saved order, or else the preset resolved against this menu.
+		$saved           = AMSwap_Order_Store::effective( AMSwap_Menu_Snapshot::items_from_menu( $menu ) );
+		self::$effective = $saved;
+
+		if ( empty( $saved['order'] ) && empty( $saved['removed'] ) && empty( $saved['hidden'] ) ) {
 			return;
 		}
 
@@ -172,6 +182,23 @@ class AMSwap_Menu_Reorder {
 		unset( $menu_order );
 
 		return $this->saved_order;
+	}
+
+	/**
+	 * The settings applied in this request: the effective settings once
+	 * admin_menu ran, the saved ones (marked as such) before that.
+	 *
+	 * @return array See AMSwap_Order_Store::effective().
+	 */
+	public static function current_settings() {
+		if ( null !== self::$effective ) {
+			return self::$effective;
+		}
+
+		return array(
+			'source' => AMSwap_Order_Store::has_saved() ? 'saved' : 'default',
+			'preset' => null,
+		) + AMSwap_Order_Store::get();
 	}
 
 	/**
@@ -252,37 +279,14 @@ class AMSwap_Menu_Reorder {
 			return $items;
 		}
 
-		$saved  = AMSwap_Order_Store::get();
+		$saved  = self::current_settings();
 		$hidden = $saved['hidden'];
 
-		foreach ( $menu as $item ) {
-			$slug = isset( $item[2] ) ? (string) $item[2] : '';
+		foreach ( AMSwap_Menu_Snapshot::items_from_menu( $menu ) as $item ) {
+			$slug         = $item['slug'];
+			$is_separator = $item['is_separator'];
 
-			if ( '' === $slug ) {
-				continue;
-			}
-
-			$is_separator = self::is_separator( $item );
-			$title        = '';
-
-			if ( ! $is_separator ) {
-				$raw = isset( $item[0] ) ? (string) $item[0] : '';
-
-				// Strip whole <span> blocks first so update/comment
-				// count digits do not leak into the title. Non-greedy so
-				// legitimate text between two spans is preserved.
-				$title = trim( wp_strip_all_tags( (string) preg_replace( '#<span[^>]*>.*?</span>#is', '', $raw ) ) );
-
-				if ( '' === $title ) {
-					$title = $slug;
-				}
-			}
-
-			$items[] = array(
-				'slug'         => $slug,
-				'title'        => $title,
-				'icon'         => ( $is_separator || ! isset( $item[6] ) ) ? '' : (string) $item[6],
-				'is_separator' => $is_separator,
+			$items[] = $item + array(
 				'is_custom'    => self::is_custom_separator( $slug ),
 				'is_hidden'    => ! $is_separator && in_array( $slug, $hidden, true ),
 				'is_protected' => ! $is_separator && self::is_protected( $slug ),

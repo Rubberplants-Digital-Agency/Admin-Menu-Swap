@@ -1,6 +1,6 @@
 <?php
 /**
- * Uninstall handler: remove the saved menu order.
+ * Uninstall handler: remove the saved menu order and the menu snapshot.
  *
  * @package Admin_Menu_Swap
  */
@@ -8,6 +8,15 @@
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
+
+// A copy built into an active site plugin keeps using the same options;
+// this plugin is inactive while it is uninstalled, so any registered copy
+// is another one.
+if ( ! empty( $GLOBALS['amswap_copies'] ) ) {
+	return;
+}
+
+$amswap_options = array( 'amswap_menu_order', 'amswap_menu_snapshot' );
 
 if ( is_multisite() ) {
 	// number => 0 removes the default 100-site limit so every site is cleaned.
@@ -20,9 +29,9 @@ if ( is_multisite() ) {
 
 	foreach ( $amswap_site_ids as $amswap_site_id ) {
 		switch_to_blog( $amswap_site_id );
-		delete_option( 'amswap_menu_order' );
+		array_map( 'delete_option', $amswap_options );
 		restore_current_blog();
 	}
 } else {
-	delete_option( 'amswap_menu_order' );
+	array_map( 'delete_option', $amswap_options );
 }
