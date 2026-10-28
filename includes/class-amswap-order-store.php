@@ -20,11 +20,11 @@ class AMSwap_Order_Store {
 	const OPTION = 'amswap_menu_order';
 
 	/**
-	 * Option schema version. Bumped to 2 when the hidden list was added;
-	 * the shape is purely additive, so version 1 options are upgraded
-	 * implicitly by the wp_parse_args() in get().
+	 * Option schema version. Bumped to 2 when the hidden list was added and
+	 * to 3 for the separator color; the shape is purely additive, so older
+	 * options are upgraded implicitly by the wp_parse_args() in get().
 	 */
-	const SCHEMA_VERSION = 2;
+	const SCHEMA_VERSION = 3;
 
 	/**
 	 * Maximum number of entries accepted in the order list.
@@ -53,10 +53,11 @@ class AMSwap_Order_Store {
 	 */
 	public static function defaults() {
 		return array(
-			'version' => self::SCHEMA_VERSION,
-			'order'   => array(),
-			'removed' => array(),
-			'hidden'  => array(),
+			'version'         => self::SCHEMA_VERSION,
+			'order'           => array(),
+			'removed'         => array(),
+			'hidden'          => array(),
+			'separator_color' => '',
 		);
 	}
 
@@ -64,10 +65,11 @@ class AMSwap_Order_Store {
 	 * Get the saved order merged over defaults.
 	 *
 	 * @return array {
-	 *     @type int      $version Option schema version.
-	 *     @type string[] $order   Ordered top-level menu slugs, separators inline.
-	 *     @type string[] $removed Core/foreign separator slugs the user deleted.
-	 *     @type string[] $hidden  Top-level menu slugs the user switched off.
+	 *     @type int      $version         Option schema version.
+	 *     @type string[] $order           Ordered top-level menu slugs, separators inline.
+	 *     @type string[] $removed         Core/foreign separator slugs the user deleted.
+	 *     @type string[] $hidden          Top-level menu slugs the user switched off.
+	 *     @type string   $separator_color Hex color for menu separators, '' for the default.
 	 * }
 	 */
 	public static function get() {
@@ -85,6 +87,9 @@ class AMSwap_Order_Store {
 			}
 		}
 
+		// Re-validated on read too: the value ends up inside a <style> block.
+		$saved['separator_color'] = self::sanitize_color( $saved['separator_color'] );
+
 		return $saved;
 	}
 
@@ -92,17 +97,19 @@ class AMSwap_Order_Store {
 	 * Persist a sanitized order. Autoload is off: the option is only
 	 * needed on admin requests.
 	 *
-	 * @param string[] $order   Ordered menu slugs.
-	 * @param string[] $removed Removed separator slugs.
-	 * @param string[] $hidden  Hidden menu slugs.
+	 * @param string[] $order           Ordered menu slugs.
+	 * @param string[] $removed         Removed separator slugs.
+	 * @param string[] $hidden          Hidden menu slugs.
+	 * @param string   $separator_color Hex separator color, '' for the default.
 	 * @return bool Whether the option was updated.
 	 */
-	public static function save( $order, $removed, $hidden = array() ) {
+	public static function save( $order, $removed, $hidden = array(), $separator_color = '' ) {
 		$value = array(
-			'version' => self::SCHEMA_VERSION,
-			'order'   => array_values( $order ),
-			'removed' => array_values( $removed ),
-			'hidden'  => array_values( $hidden ),
+			'version'         => self::SCHEMA_VERSION,
+			'order'           => array_values( $order ),
+			'removed'         => array_values( $removed ),
+			'hidden'          => array_values( $hidden ),
+			'separator_color' => self::sanitize_color( $separator_color ),
 		);
 
 		return update_option( self::OPTION, $value, false );
@@ -230,6 +237,21 @@ class AMSwap_Order_Store {
 		}
 
 		return $clean;
+	}
+
+	/**
+	 * Sanitize the separator color: a #rgb or #rrggbb hex value, or ''
+	 * to leave separators as the admin color scheme draws them.
+	 *
+	 * @param mixed $color Raw color.
+	 * @return string Clean hex color, or ''.
+	 */
+	public static function sanitize_color( $color ) {
+		if ( ! is_string( $color ) ) {
+			return '';
+		}
+
+		return (string) sanitize_hex_color( trim( $color ) );
 	}
 
 	/**

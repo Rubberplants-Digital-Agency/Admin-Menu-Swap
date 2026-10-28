@@ -1,9 +1,9 @@
 /**
  * Admin Menu Swap — sortable list, separator management, show/hide
- * toggles, serialization.
+ * toggles, separator color, serialization.
  *
- * Only the sortable() call needs jQuery (WP-bundled jquery-ui-sortable);
- * the rest is plain event handling.
+ * Only the sortable() and wpColorPicker() calls need jQuery (both
+ * WP-bundled); the rest is plain event handling.
  */
 ( function( $ ) {
 	'use strict';
@@ -29,6 +29,30 @@
 			forcePlaceholderSize: true,
 			cursor: 'move',
 			opacity: 0.8
+		} );
+
+		// Preview the separator color on the real admin menu next to the
+		// form. Rewrites the rule print_separator_css() prints, or adds one
+		// when no color was saved yet.
+		function previewSeparatorColor( color ) {
+			var style = document.getElementById( 'amswap-separator-css' );
+
+			if ( ! style ) {
+				style    = document.createElement( 'style' );
+				style.id = 'amswap-separator-css';
+				document.head.appendChild( style );
+			}
+
+			style.textContent = color ? '#adminmenu li.wp-menu-separator div.separator { background-color: ' + color + '; }' : '';
+		}
+
+		$( '#amswap_separator_color' ).wpColorPicker( {
+			change: function( event, ui ) {
+				previewSeparatorColor( ui.color.toString() );
+			},
+			clear: function() {
+				previewSeparatorColor( '' );
+			}
 		} );
 
 		$( '#amswap-add-separator' ).on( 'click', function() {

@@ -149,6 +149,18 @@
 	list-style: none;
 }
 
+/* Separator color picker. */
+.amswap-color {
+	max-width: 480px;
+	margin: 0 0 12px;
+}
+
+.amswap-color label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+
 .amswap-actions {
 	display: flex;
 	align-items: center;

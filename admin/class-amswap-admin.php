@@ -82,14 +82,14 @@ class AMSwap_Admin {
 		wp_enqueue_style(
 			'amswap-admin',
 			AMSWAP_PLUGIN_URL . 'assets/admin.css',
-			array( 'dashicons' ),
+			array( 'dashicons', 'wp-color-picker' ),
 			AMSWAP_VERSION
 		);
 
 		wp_enqueue_script(
 			'amswap-admin',
 			AMSWAP_PLUGIN_URL . 'assets/admin.js',
-			array( 'jquery-ui-sortable' ),
+			array( 'jquery-ui-sortable', 'wp-color-picker' ),
 			AMSWAP_VERSION,
 			true
 		);
@@ -98,7 +98,7 @@ class AMSwap_Admin {
 			'amswap-admin',
 			'amswapL10n',
 			array(
-				'confirmReset' => __( 'Reset the admin menu to the WordPress default? Your saved order, hidden items and custom separators will be deleted.', 'admin-menu-swap' ),
+				'confirmReset' => __( 'Reset the admin menu to the WordPress default? Your saved order, hidden items, custom separators and separator color will be deleted.', 'admin-menu-swap' ),
 				'hideLabel'    => __( 'Hide from menu', 'admin-menu-swap' ),
 				'showLabel'    => __( 'Show in menu', 'admin-menu-swap' ),
 			)
@@ -126,7 +126,7 @@ class AMSwap_Admin {
 		<div class="wrap amswap-wrap">
 			<h1><?php esc_html_e( 'Admin Menu Swap', 'admin-menu-swap' ); ?></h1>
 
-			<p><?php esc_html_e( 'Drag the items below into the order you want the admin menu to appear in. Use the eye button to hide an item you never use. Separators can be dragged, removed and added to group items. Both the order and the hidden items apply to all users.', 'admin-menu-swap' ); ?></p>
+			<p><?php esc_html_e( 'Drag the items below into the order you want the admin menu to appear in. Use the eye button to hide an item you never use. Separators can be dragged, removed and added to group items, and given a color of your own. Everything here applies to all users.', 'admin-menu-swap' ); ?></p>
 
 			<p class="description amswap-note">
 				<?php esc_html_e( 'Hiding an item only takes it out of the menu — the page behind it stays reachable by its direct URL. Use user roles and capabilities to actually restrict access.', 'admin-menu-swap' ); ?>
@@ -140,6 +140,12 @@ class AMSwap_Admin {
 					}
 					?>
 				</ul>
+
+				<div class="amswap-color">
+					<label for="amswap_separator_color"><?php esc_html_e( 'Separator color', 'admin-menu-swap' ); ?></label>
+					<input type="text" name="amswap_separator_color" id="amswap_separator_color" value="<?php echo esc_attr( $saved['separator_color'] ); ?>" />
+					<p class="description"><?php esc_html_e( 'Colors the separators in the admin menu. Clear it to keep the admin color scheme\'s default.', 'admin-menu-swap' ); ?></p>
+				</div>
 
 				<p class="amswap-actions">
 					<button type="button" class="button" id="amswap-add-separator">
@@ -288,18 +294,20 @@ class AMSwap_Admin {
 		$order_json   = isset( $_POST['amswap_order'] ) ? wp_unslash( $_POST['amswap_order'] ) : '';
 		$hidden_json  = isset( $_POST['amswap_hidden'] ) ? wp_unslash( $_POST['amswap_hidden'] ) : '';
 		$removed_json = isset( $_POST['amswap_removed'] ) ? wp_unslash( $_POST['amswap_removed'] ) : '';
+		$color_raw    = isset( $_POST['amswap_separator_color'] ) ? wp_unslash( $_POST['amswap_separator_color'] ) : '';
 		// phpcs:enable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		$order   = AMSwap_Order_Store::sanitize_order( $order_json );
 		$hidden  = AMSwap_Order_Store::sanitize_hidden( $hidden_json );
 		$removed = AMSwap_Order_Store::sanitize_removed( $removed_json );
+		$color   = AMSwap_Order_Store::sanitize_color( $color_raw );
 
 		if ( empty( $order ) ) {
 			$this->redirect_with_notice( __( 'Nothing to save: the submitted menu order was empty.', 'admin-menu-swap' ), 'error' );
 		}
 
-		AMSwap_Order_Store::save( $order, $removed, $hidden );
+		AMSwap_Order_Store::save( $order, $removed, $hidden, $color );
 
 		$this->redirect_with_notice( __( 'Menu saved.', 'admin-menu-swap' ), 'success' );
 	}

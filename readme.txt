@@ -4,7 +4,7 @@ Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,6 +17,7 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 * Drag & drop reordering of all top-level menu items.
 * Show/hide toggle per item — hidden items keep their place in the list, so switching one back on returns it to where it was.
 * Separators are draggable too, can be removed, and new ones can be added.
+* Pick a color for the menu separators, previewed live in the admin menu.
 * One click "Reset to default menu".
 * Zero footprint until you save for the first time.
 * Uses the WordPress core `menu_order` filter — cooperates with, rather than overwrites, the admin menu.
@@ -53,11 +54,18 @@ It is kept. Hidden items stay in the list on the Menu Order page (dimmed and str
 
 No. Admin Menu Swap changes order, visibility and separators, on purpose.
 
+= How does the separator color work? =
+
+WordPress draws each menu separator as an invisible 2px line. Pick a color under Settings → Menu Order and every separator line in the admin menu is drawn in that color. Clear the color to go back to the admin color scheme's default.
+
 = Another plugin also reorders the admin menu — who wins? =
 
 Admin Menu Swap registers its `menu_order` filter at a very late priority, so its saved order wins. A plugin that force-disables `custom_menu_order` at an even later priority would disable sorting entirely; that is rare.
 
 == Changelog ==
+
+= 1.2.0 =
+* Added a color picker for the admin menu separators, with a live preview in the menu.
 
 = 1.1.0 =
 * Added a show/hide toggle to every top-level menu item. Hidden items keep their position in the saved order.

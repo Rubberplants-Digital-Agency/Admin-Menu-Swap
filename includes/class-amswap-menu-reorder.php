@@ -10,8 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Injects/removes separators, drops hidden items and hands the saved
- * order to core's menu_order sorting.
+ * Injects/removes separators, drops hidden items, hands the saved
+ * order to core's menu_order sorting and paints the separator color.
  *
  * Hiding is presentational only: unsetting a $menu row takes the item out
  * of the menu, it does not gate the page behind it. Anything a role can
@@ -56,6 +56,33 @@ class AMSwap_Menu_Reorder {
 	public function register() {
 		// Very late, so effectively all plugins have registered their menus.
 		add_action( 'admin_menu', array( $this, 'prepare_menu' ), 99999 );
+		add_action( 'admin_head', array( $this, 'print_separator_css' ) );
+	}
+
+	/**
+	 * Paint the menu separators in the saved color.
+	 *
+	 * Core draws each separator as a transparent 2px div.separator inside
+	 * its row, so a background color on that div turns it into a visible
+	 * line. Like the reordering, this stays out of the
+	 * network and user admin, whose menus this plugin never touches.
+	 */
+	public function print_separator_css() {
+		if ( is_network_admin() || is_user_admin() ) {
+			return;
+		}
+
+		$saved = AMSwap_Order_Store::get();
+
+		if ( '' === $saved['separator_color'] ) {
+			return;
+		}
+
+		// The id lets the settings page swap the rule for a live preview.
+		printf(
+			'<style id="amswap-separator-css">#adminmenu li.wp-menu-separator div.separator { background-color: %s; }</style>' . "\n",
+			esc_html( $saved['separator_color'] )
+		);
 	}
 
 	/**
