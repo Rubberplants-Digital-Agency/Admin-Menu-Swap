@@ -256,7 +256,10 @@ class AMSwap_Menu_Snapshot {
 	 * @return string
 	 */
 	public static function clean_title( $raw, $slug ) {
-		$title = trim( wp_strip_all_tags( (string) preg_replace( '#<span[^>]*>.*?</span>#is', '', $raw ) ) );
+		$title = wp_strip_all_tags( (string) preg_replace( '#<span[^>]*>.*?</span>#is', '', $raw ) );
+
+		// Menu titles are stored escaped ("Pagina&#039;s"); output re-escapes.
+		$title = trim( html_entity_decode( $title, ENT_QUOTES, 'UTF-8' ) );
 
 		return '' === $title ? $slug : $title;
 	}

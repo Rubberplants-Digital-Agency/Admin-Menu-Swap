@@ -93,6 +93,7 @@ return array(
 				'edit.php?post_type=acf-field-group',
 				'flatsome-panel',
 				'astra',
+				'gravitysmtp*',
 				'wp-mail-smtp*',
 				'postman*',
 				'fluent-mail*',
