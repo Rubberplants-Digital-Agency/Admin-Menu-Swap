@@ -97,6 +97,11 @@ return array(
 				'wp-mail-smtp*',
 				'postman*',
 				'fluent-mail*',
+				'chaty*',
+				'wpgmp_*',
+				'wpcas*',
+				// A one-time setup (media folders), so last.
+				'cat_folders*',
 			),
 		),
 	),
