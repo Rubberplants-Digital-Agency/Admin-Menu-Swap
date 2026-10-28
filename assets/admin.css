@@ -378,6 +378,11 @@
 	font-size: 12px;
 }
 
+.amswap-users .amswap-users-more {
+	background: none;
+	color: var( --amswap-text-muted );
+}
+
 .amswap-source {
 	padding-left: 10px;
 	border-left: 3px solid var( --amswap-accent );

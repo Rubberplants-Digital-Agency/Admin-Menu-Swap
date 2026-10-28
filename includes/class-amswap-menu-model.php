@@ -95,15 +95,25 @@ class AMSwap_Menu_Model {
 	/**
 	 * Every profile with where its settings come from and who it applies to.
 	 *
+	 * Only users who can open the dashboard count (see dashboard_caps()), so
+	 * a shop's customers do not swell the lists.
+	 *
 	 * @return array[] { key, label, source ('saved', 'preset' or 'inherit'; the default profile:
-	 *                 'saved', 'preset' or 'default'), users (logins, at most 50) }.
+	 *                 'saved', 'preset' or 'default'), users (logins, at most 50), count (all of them) }.
 	 */
 	public static function profiles() {
 		$sources = AMSwap_Order_Store::role_sources();
 		$preset  = AMSwap_Preset::get();
 		$users   = array( AMSwap_Order_Store::DEFAULT_PROFILE => array() );
 
-		foreach ( get_users( array( 'number' => 500 ) ) as $user ) {
+		$query = get_users(
+			array(
+				'capability__in' => self::dashboard_caps(),
+				'number'         => 500,
+			)
+		);
+
+		foreach ( $query as $user ) {
 			$users[ AMSwap_Order_Store::profile_for_user( $user ) ][] = $user->user_login;
 		}
 
@@ -119,6 +129,7 @@ class AMSwap_Menu_Model {
 				'label'  => __( 'Default (agency accounts and roles without a profile)', 'admin-menu-swap' ),
 				'source' => $default_source,
 				'users'  => array_slice( $users[ AMSwap_Order_Store::DEFAULT_PROFILE ], 0, 50 ),
+				'count'  => count( $users[ AMSwap_Order_Store::DEFAULT_PROFILE ] ),
 			),
 		);
 
@@ -134,10 +145,37 @@ class AMSwap_Menu_Model {
 				'label'  => $label,
 				'source' => isset( $sources[ $role ] ) ? $sources[ $role ] : 'inherit',
 				'users'  => array_slice( isset( $users[ $role ] ) ? $users[ $role ] : array(), 0, 50 ),
+				'count'  => isset( $users[ $role ] ) ? count( $users[ $role ] ) : 0,
 			);
 		}
 
 		return $profiles;
+	}
+
+	/**
+	 * The capabilities of which a user needs one to open the dashboard, and
+	 * so to see the admin menu. With WooCommerce that is edit_posts,
+	 * manage_woocommerce or view_admin_dashboard: WooCommerce sends everyone
+	 * else (its customers) to My Account while it hides their admin bar.
+	 * Without WooCommerce every user with read reaches the dashboard.
+	 *
+	 * @return string[]
+	 */
+	public static function dashboard_caps() {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce's own filter.
+		if ( class_exists( 'WooCommerce' ) && apply_filters( 'woocommerce_disable_admin_bar', true ) ) {
+			$caps = array( 'edit_posts', 'manage_woocommerce', 'view_admin_dashboard' );
+		} else {
+			$caps = array( 'read' );
+		}
+
+		/**
+		 * Filters the capabilities of which a user needs one to count as
+		 * someone who sees the admin menu.
+		 *
+		 * @param string[] $caps Capabilities.
+		 */
+		return (array) apply_filters( 'amswap_dashboard_caps', $caps );
 	}
 
 	/**

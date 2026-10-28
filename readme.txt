@@ -4,7 +4,7 @@ Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,10 @@ WordPress draws each menu separator as an invisible 2px line. Pick a color under
 Admin Menu Swap registers its `menu_order` filter at a very late priority, so its saved order wins. A plugin that force-disables `custom_menu_order` at an even later priority would disable sorting entirely; that is rare.
 
 == Changelog ==
+
+= 1.5.1 =
+* The profile tabs and "Who sees this menu" count only users who can open the dashboard: with WooCommerce, users with edit_posts, manage_woocommerce or view_admin_dashboard, so a shop's customers no longer fill the list (filter: amswap_dashboard_caps).
+* The tab shows the real number of users; the list names the first 50 and says how many more there are.
 
 = 1.5.0 =
 * New settings page: the menu is edited as a copy of the admin menu itself (dark, with the real icons, slugs and separator color), next to a sidebar with who sees the profile, the separator color, saving and the agency accounts.

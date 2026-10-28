@@ -188,8 +188,8 @@ class AMSwap_Admin {
 						<?php echo $option['key'] === $profile ? 'aria-current="page"' : ''; ?>
 						title="<?php echo esc_attr( $this->source_label( $option['source'] ) ); ?>">
 						<span class="amswap-profile-name"><?php echo esc_html( $label ); ?></span>
-						<?php if ( ! empty( $option['users'] ) ) : ?>
-							<span class="amswap-profile-count"><?php echo esc_html( (string) count( $option['users'] ) ); ?></span>
+						<?php if ( $option['count'] > 0 ) : ?>
+							<span class="amswap-profile-count"><?php echo esc_html( (string) $option['count'] ); ?></span>
 						<?php endif; ?>
 					</a>
 				<?php endforeach; ?>
@@ -240,7 +240,7 @@ class AMSwap_Admin {
 							<?php
 							echo esc_html(
 								$is_default
-									? __( 'Agency accounts, and every role without a profile of its own.', 'admin-menu-swap' )
+									? __( 'Agency accounts, and every role without a profile of its own. Users who cannot open the dashboard, such as shop customers, are left out.', 'admin-menu-swap' )
 									: __( 'Users with this role who are not agency accounts. The profile hides items on top of what the default menu hides.', 'admin-menu-swap' )
 							);
 							?>
@@ -251,6 +251,14 @@ class AMSwap_Admin {
 								<?php foreach ( $current['users'] as $login ) : ?>
 									<li><?php echo esc_html( $login ); ?></li>
 								<?php endforeach; ?>
+								<?php if ( $current['count'] > count( $current['users'] ) ) : ?>
+									<li class="amswap-users-more">
+										<?php
+										/* translators: %d: number of users not listed. */
+										echo esc_html( sprintf( __( 'and %d more', 'admin-menu-swap' ), $current['count'] - count( $current['users'] ) ) );
+										?>
+									</li>
+								<?php endif; ?>
 							</ul>
 						<?php else : ?>
 							<p class="amswap-muted"><?php esc_html_e( 'Nobody gets this menu right now.', 'admin-menu-swap' ); ?></p>

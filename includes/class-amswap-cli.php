@@ -103,11 +103,18 @@ class AMSwap_CLI {
 			);
 
 			if ( ! empty( $current['users'] ) ) {
+				$logins = implode( ', ', $current['users'] );
+
+				if ( $current['count'] > count( $current['users'] ) ) {
+					/* translators: 1: comma-separated user logins. 2: number of users not listed. */
+					$logins = sprintf( __( '%1$s and %2$d more', 'admin-menu-swap' ), $logins, $current['count'] - count( $current['users'] ) );
+				}
+
 				WP_CLI::log(
 					sprintf(
 						/* translators: %s: comma-separated user logins. */
 						__( 'Applies to: %s', 'admin-menu-swap' ),
-						implode( ', ', $current['users'] )
+						$logins
 					)
 				);
 			}
