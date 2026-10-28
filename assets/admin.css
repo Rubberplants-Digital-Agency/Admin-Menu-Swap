@@ -1,238 +1,487 @@
-/* Admin Menu Swap — settings page styling. */
+/*
+ * Admin Menu Swap — settings page.
+ *
+ * The list is drawn as the admin menu itself (dark, light text, the real
+ * icons and separator color), so the order is edited where it will be
+ * seen. Everything around it stays plain WordPress admin.
+ */
 
-.amswap-wrap .amswap-note {
-	max-width: 480px;
+.amswap-wrap {
+	--amswap-accent: var( --wp-admin-theme-color, #2271b1 );
+	--amswap-menu-bg: #1d2327;
+	--amswap-menu-hover: #2c3338;
+	--amswap-menu-text: #f0f0f1;
+	--amswap-menu-muted: #a7aaad;
+	--amswap-line: #dcdcde;
+	--amswap-text-muted: #646970;
+	max-width: 1100px;
+}
+
+/* Header and profile tabs. */
+.amswap-header h1 {
+	margin-bottom: 4px;
+}
+
+.amswap-header p {
+	margin: 0 0 20px;
+	font-size: 14px;
+	color: var( --amswap-text-muted );
+}
+
+.amswap-profiles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0 0 20px;
+}
+
+.amswap-profile {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border: 1px solid var( --amswap-line );
+	border-radius: 999px;
+	background: #fff;
+	color: #1d2327;
+	text-decoration: none;
+	line-height: 1.4;
+}
+
+.amswap-profile:hover {
+	border-color: var( --amswap-accent );
+	color: var( --amswap-accent );
+}
+
+.amswap-profile:focus-visible {
+	outline: 2px solid var( --amswap-accent );
+	outline-offset: 2px;
+	box-shadow: none;
+}
+
+.amswap-profile.is-current {
+	background: var( --amswap-accent );
+	border-color: var( --amswap-accent );
+	color: #fff;
+}
+
+/* A role without settings of its own is quieter than one with a profile. */
+.amswap-profile.amswap-source-inherit:not( .is-current ) {
+	color: var( --amswap-text-muted );
+	border-style: dashed;
+}
+
+.amswap-profile-count {
+	min-width: 18px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: #f0f0f1;
+	color: #1d2327;
+	font-size: 12px;
+	text-align: center;
+}
+
+.amswap-profile.is-current .amswap-profile-count {
+	background: rgba( 255, 255, 255, 0.25 );
+	color: #fff;
+}
+
+/* Two columns: the menu, and a sidebar. */
+.amswap-layout {
+	display: grid;
+	grid-template-columns: minmax( 300px, 400px ) minmax( 260px, 360px );
+	gap: 24px;
+	align-items: start;
+}
+
+/* The menu panel. */
+.amswap-menu {
+	background: var( --amswap-menu-bg );
+	border-radius: 8px;
+	color: var( --amswap-menu-text );
+	overflow: hidden;
+}
+
+.amswap-menu-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 16px 10px;
+}
+
+.amswap-menu-head h2 {
+	margin: 0;
+	color: var( --amswap-menu-text );
+	font-size: 14px;
+}
+
+.amswap-count {
+	color: var( --amswap-menu-muted );
+	font-size: 12px;
 }
 
 .amswap-wrap #amswap-menu-list {
-	max-width: 480px;
-	margin: 20px 0 12px;
+	margin: 0;
+	padding: 4px 0;
 }
 
 .amswap-item {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	background: #fff;
-	border: 1px solid #c3c4c7;
+	min-height: 38px;
+	margin: 0;
+	padding: 2px 10px 2px 4px;
+	list-style: none;
+}
+
+.amswap-item:hover,
+.amswap-item:focus-within {
+	background: var( --amswap-menu-hover );
+}
+
+.amswap-handle,
+.amswap-toggle,
+.amswap-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 0;
 	border-radius: 4px;
-	padding: 8px 12px;
-	margin-bottom: 6px;
-	box-shadow: 0 1px 1px rgba( 0, 0, 0, 0.04 );
+	background: transparent;
+	color: var( --amswap-menu-muted );
+	cursor: pointer;
+}
+
+.amswap-handle {
+	cursor: grab;
+}
+
+.amswap-handle:hover,
+.amswap-toggle:hover,
+.amswap-remove:hover {
+	color: var( --amswap-menu-text );
+}
+
+.amswap-handle:focus-visible,
+.amswap-toggle:focus-visible,
+.amswap-remove:focus-visible {
+	outline: 2px solid var( --amswap-accent );
+	outline-offset: -2px;
+	box-shadow: none;
+	color: var( --amswap-menu-text );
+}
+
+.amswap-toggle[disabled] {
+	cursor: default;
+	opacity: 0.5;
 }
 
 .amswap-icon {
 	display: flex;
 	align-items: center;
-	color: #50575e;
+	justify-content: center;
+	width: 20px;
+	color: var( --amswap-menu-muted );
 }
 
+/* Plugin icons are often dark SVGs meant to be recolored; draw them light. */
 .amswap-icon img {
+	display: block;
 	max-width: 20px;
 	max-height: 20px;
-	display: block;
+	filter: brightness( 0 ) invert( 0.75 );
+}
+
+.amswap-label {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-width: 0;
+	line-height: 1.3;
 }
 
 .amswap-title {
-	flex: 1;
-	font-weight: 600;
-	color: #1d2327;
+	overflow: hidden;
+	font-size: 14px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.amswap-handle {
-	cursor: grab;
-	color: #787c82;
-	margin-left: auto;
-}
-
-/* Show/hide toggle. */
-.amswap-toggle {
-	display: flex;
-	align-items: center;
-	border: none;
-	background: transparent;
-	color: #50575e;
-	cursor: pointer;
-	padding: 0 2px;
-}
-
-.amswap-toggle:hover {
-	color: #2271b1;
-}
-
-.amswap-toggle:focus {
-	box-shadow: 0 0 0 2px #2271b1;
-	border-radius: 2px;
-	outline: none;
-}
-
-.amswap-toggle[disabled] {
-	color: #a7aaad;
-	cursor: default;
-}
-
-/* Hidden rows: dimmed, struck through, badged. */
-.amswap-badge {
-	display: none;
+.amswap-slug {
+	overflow: hidden;
+	color: var( --amswap-menu-muted );
 	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	color: #646970;
-	background: #f0f0f1;
-	border-radius: 2px;
-	padding: 1px 6px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.amswap-is-hidden {
-	background: #f6f7f7;
-	border-style: dashed;
+.amswap-badge {
+	flex: none;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: rgba( 240, 246, 252, 0.12 );
+	color: var( --amswap-menu-text );
+	font-size: 11px;
+	line-height: 18px;
 }
 
-.amswap-is-hidden .amswap-badge {
+.amswap-badge-hidden {
+	display: none;
+}
+
+/* Hidden rows: present, so they can be switched back on, but faded out. */
+.amswap-is-hidden .amswap-badge-hidden {
 	display: inline-block;
 }
 
 .amswap-is-hidden .amswap-icon,
-.amswap-is-hidden .amswap-title {
-	opacity: 0.5;
+.amswap-is-hidden .amswap-label {
+	opacity: 0.45;
 }
 
 .amswap-is-hidden .amswap-title {
 	text-decoration: line-through;
 }
 
-.ui-sortable-helper .amswap-handle {
-	cursor: grabbing;
+.amswap-no-access .amswap-icon,
+.amswap-no-access .amswap-label {
+	opacity: 0.6;
 }
 
-/* Separator rows: slim dashed bars. */
+/* Separators: the line the real menu draws. */
 .amswap-separator {
-	background: #f0f0f1;
-	border-style: dashed;
-	padding: 4px 12px;
+	min-height: 26px;
 }
 
 .amswap-sep-line {
 	flex: 1;
-	border-top: 2px solid #8c8f94;
+	height: 2px;
+	background: var( --amswap-separator, rgba( 240, 246, 252, 0.18 ) );
 }
 
-.amswap-sep-label {
-	color: #646970;
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+.amswap-separator .amswap-remove {
+	opacity: 0;
 }
 
-.amswap-remove {
-	border: none;
-	background: transparent;
-	color: #b32d2e;
-	cursor: pointer;
-	font-size: 18px;
-	line-height: 1;
-	padding: 0 4px;
+.amswap-separator:hover .amswap-remove,
+.amswap-separator:focus-within .amswap-remove {
+	opacity: 1;
 }
 
-.amswap-remove:hover {
-	color: #8a2424;
-}
-
-/* Drop target outline while dragging. */
+/* Drop target while dragging. */
 .amswap-placeholder {
-	border: 2px dashed #2271b1;
+	height: 38px;
+	margin: 0 8px;
+	border: 2px dashed var( --amswap-accent );
 	border-radius: 4px;
-	background: #f0f6fc;
-	margin-bottom: 6px;
 	list-style: none;
 }
 
-/* Separator color picker. */
-.amswap-color {
-	max-width: 480px;
+.ui-sortable-helper {
+	background: var( --amswap-menu-hover );
+	box-shadow: 0 6px 16px rgba( 0, 0, 0, 0.35 );
+}
+
+.ui-sortable-helper .amswap-handle {
+	cursor: grabbing;
+}
+
+/* Moved by keyboard: a brief mark where the row landed. */
+.amswap-item.is-moved {
+	background: var( --amswap-menu-hover );
+	box-shadow: inset 3px 0 0 var( --amswap-accent );
+}
+
+.amswap-menu-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	padding: 10px 16px 14px;
+	border-top: 1px solid rgba( 240, 246, 252, 0.08 );
+}
+
+.amswap-add {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px 4px 6px;
+	border: 1px solid rgba( 240, 246, 252, 0.25 );
+	border-radius: 4px;
+	background: transparent;
+	color: var( --amswap-menu-text );
+	cursor: pointer;
+}
+
+.amswap-add:hover {
+	border-color: var( --amswap-menu-text );
+}
+
+.amswap-add:focus-visible {
+	outline: 2px solid var( --amswap-accent );
+	outline-offset: 2px;
+}
+
+.amswap-hint {
+	color: var( --amswap-menu-muted );
+	font-size: 12px;
+}
+
+/* The sidebar: one panel, sections divided by rules. */
+.amswap-side {
+	position: sticky;
+	top: 48px;
+	border: 1px solid var( --amswap-line );
+	border-radius: 8px;
+	background: #fff;
+}
+
+.amswap-side-section {
+	padding: 16px;
+}
+
+.amswap-side-section + .amswap-side-section {
+	border-top: 1px solid var( --amswap-line );
+}
+
+.amswap-side h2 {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+.amswap-side p {
+	margin: 0 0 10px;
+}
+
+.amswap-muted,
+.amswap-side .amswap-muted {
+	color: var( --amswap-text-muted );
+}
+
+.amswap-users {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 0 0 10px;
+}
+
+.amswap-users li {
+	margin: 0;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: #f0f0f1;
+	font-size: 12px;
+}
+
+.amswap-source {
+	padding-left: 10px;
+	border-left: 3px solid var( --amswap-accent );
+}
+
+.amswap-check {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 6px 0;
+}
+
+.amswap-check input[type="checkbox"] {
+	margin-top: 2px;
+}
+
+.amswap-save {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.amswap-dirty {
+	color: #996800;
+	font-weight: 600;
+}
+
+.amswap-reset.button-link {
+	color: #b32d2e;
+}
+
+.amswap-reset.button-link:hover {
+	color: #8a2424;
+}
+
+/* Agency accounts: folded away. */
+.amswap-agency summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	cursor: pointer;
+	list-style: none;
+}
+
+.amswap-agency summary::-webkit-details-marker {
+	display: none;
+}
+
+/* A chevron that turns when the section opens. */
+.amswap-agency summary::after {
+	content: "347";
+	font: normal 16px/1 dashicons;
+	color: var( --amswap-text-muted );
+}
+
+.amswap-agency[open] summary::after {
+	transform: rotate( 180deg );
+}
+
+.amswap-agency summary:focus-visible {
+	outline: 2px solid var( --amswap-accent );
+	outline-offset: 4px;
+}
+
+.amswap-agency summary h2 {
+	margin: 0;
+}
+
+.amswap-agency[open] summary {
+	margin-bottom: 10px;
+}
+
+.amswap-agency label[for="amswap_agency_domains"],
+.amswap-agency legend {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 600;
+}
+
+.amswap-agency fieldset {
 	margin: 0 0 12px;
 }
 
-.amswap-color label {
-	display: block;
-	font-weight: 600;
-	margin-bottom: 6px;
+.amswap-agency .amswap-badge {
+	background: #f0f0f1;
+	color: #1d2327;
 }
 
-.amswap-actions {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	max-width: 480px;
+.amswap-side .amswap-note {
+	margin: 0;
+	padding: 12px 16px 16px;
+	border-top: 1px solid var( --amswap-line );
+	color: var( --amswap-text-muted );
+	font-size: 12px;
 }
 
-.amswap-actions .button .dashicons {
-	vertical-align: text-bottom;
-	font-size: 16px;
-	width: 16px;
-	height: 16px;
+@media screen and ( max-width: 960px ) {
+	.amswap-layout {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+
+	.amswap-side {
+		position: static;
+	}
 }
 
-#amswap-reset-form {
-	margin-top: 24px;
-	padding-top: 16px;
-	border-top: 1px solid #dcdcde;
-	max-width: 480px;
-}
-
-/* Profile picker and what a profile applies to. */
-.amswap-profile-picker {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	max-width: 480px;
-	margin: 16px 0 4px;
-}
-
-.amswap-profile-picker label {
-	font-weight: 600;
-}
-
-.amswap-profile-picker select {
-	flex: 1 1 240px;
-	max-width: 100%;
-}
-
-.amswap-wrap .amswap-applies {
-	max-width: 480px;
-	margin-bottom: 12px;
-}
-
-.amswap-follow {
-	max-width: 480px;
-}
-
-/* Rows the profile's role cannot open: shown, but quiet. */
-.amswap-no-access .amswap-icon,
-.amswap-no-access .amswap-title {
-	opacity: 0.6;
-}
-
-.amswap-badge.amswap-badge-on {
-	display: inline-block;
-}
-
-/* Agency accounts. */
-#amswap-agency-form {
-	margin-top: 24px;
-	padding-top: 16px;
-	border-top: 1px solid #dcdcde;
-	max-width: 480px;
-}
-
-#amswap-agency-form h2 {
-	margin-top: 0;
-}
-
-.amswap-agency-user {
-	display: block;
-	margin: 4px 0;
-}

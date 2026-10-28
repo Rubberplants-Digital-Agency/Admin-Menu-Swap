@@ -4,7 +4,7 @@ Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,11 @@ WordPress draws each menu separator as an invisible 2px line. Pick a color under
 Admin Menu Swap registers its `menu_order` filter at a very late priority, so its saved order wins. A plugin that force-disables `custom_menu_order` at an even later priority would disable sorting entirely; that is rare.
 
 == Changelog ==
+
+= 1.5.0 =
+* New settings page: the menu is edited as a copy of the admin menu itself (dark, with the real icons, slugs and separator color), next to a sidebar with who sees the profile, the separator color, saving and the agency accounts.
+* Profiles are tabs, with the number of users each applies to.
+* Rows can be moved with the arrow keys on their handle (announced to screen readers); the item count updates live and unsaved changes are marked, with a warning before leaving the page.
 
 = 1.4.0 =
 * Added menu profiles per role: hidden items and, optionally, an order of their own. Presets can define them (`profiles`, with `hide_groups`, `show` and `hidden`); the Rubberplants preset hides the developer and WPMU DEV items from client administrators.

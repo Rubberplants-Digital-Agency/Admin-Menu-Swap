@@ -99,7 +99,7 @@ class AMSwap_Admin {
 		wp_enqueue_script(
 			'amswap-admin',
 			AMSWAP_PLUGIN_URL . 'assets/admin.js',
-			array( 'jquery-ui-sortable', 'wp-color-picker' ),
+			array( 'jquery-ui-sortable', 'wp-color-picker', 'wp-a11y' ),
 			AMSWAP_VERSION,
 			true
 		);
@@ -122,12 +122,18 @@ class AMSwap_Admin {
 				'confirmReset' => $confirm,
 				'hideLabel'    => __( 'Hide from menu', 'admin-menu-swap' ),
 				'showLabel'    => __( 'Show in menu', 'admin-menu-swap' ),
+				/* translators: 1: number of menu items, 2: number of hidden items. */
+				'count'        => __( '%1$d items, %2$d hidden', 'admin-menu-swap' ),
+				/* translators: 1: new position, 2: number of rows. */
+				'moved'        => __( 'Moved to position %1$d of %2$d.', 'admin-menu-swap' ),
+				'leave'        => __( 'You have unsaved changes to the menu.', 'admin-menu-swap' ),
 			)
 		);
 	}
 
 	/**
-	 * Render the settings page.
+	 * Render the settings page: profile tabs, the menu as a sortable copy of
+	 * the admin menu, and a sidebar with who sees it and what to do with it.
 	 */
 	public function render_page() {
 		if ( ! current_user_can( 'manage_options' ) || ! AMSwap_Agency::is_agency() ) {
@@ -156,102 +162,144 @@ class AMSwap_Admin {
 		if ( ! is_string( $removed_json ) ) {
 			$removed_json = '[]';
 		}
+
+		$rows   = wp_list_filter( $items, array( 'is_separator' => false ) );
+		$hidden = wp_list_filter( $rows, array( 'is_hidden' => true ) );
+
+		// The list draws separators in the color the real menu uses (shared
+		// by every profile, so a role profile carries the default's).
+		$list_style = '' === $saved['separator_color'] ? '' : '--amswap-separator: ' . $saved['separator_color'] . ';';
 		?>
 		<div class="wrap amswap-wrap">
-			<h1><?php esc_html_e( 'Admin Menu Swap', 'admin-menu-swap' ); ?></h1>
+			<header class="amswap-header">
+				<h1><?php esc_html_e( 'Admin Menu Swap', 'admin-menu-swap' ); ?></h1>
+				<p><?php esc_html_e( 'Arrange the admin menu, hide what nobody uses and give each role its own view.', 'admin-menu-swap' ); ?></p>
+			</header>
 
-			<p><?php esc_html_e( 'Drag the items below into the order you want the admin menu to appear in. Use the eye button to hide an item you never use. Separators can be dragged, removed and added to group items, and given a color of your own.', 'admin-menu-swap' ); ?></p>
-
-			<p class="description amswap-note">
-				<?php esc_html_e( 'Hiding an item only takes it out of the menu — the page behind it stays reachable by its direct URL. Use user roles and capabilities to actually restrict access.', 'admin-menu-swap' ); ?>
-			</p>
-
-			<form method="get" action="<?php echo esc_url( admin_url( 'options-general.php' ) ); ?>" class="amswap-profile-picker">
-				<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE_SLUG ); ?>" />
-				<label for="amswap-profile"><?php esc_html_e( 'Menu profile', 'admin-menu-swap' ); ?></label>
-				<select name="profile" id="amswap-profile">
-					<?php foreach ( $profiles as $option ) : ?>
-						<option value="<?php echo esc_attr( $option['key'] ); ?>" <?php selected( $option['key'], $profile ); ?>>
-							<?php echo esc_html( $option['label'] . ' — ' . $this->source_label( $option['source'] ) ); ?>
-						</option>
-					<?php endforeach; ?>
-				</select>
-				<?php submit_button( __( 'Edit', 'admin-menu-swap' ), 'secondary', '', false ); ?>
-			</form>
-
-			<p class="description amswap-applies">
-				<?php
-				if ( $is_default ) {
-					esc_html_e( 'The default menu applies to agency accounts and to every role without a profile of its own.', 'admin-menu-swap' );
-				} else {
-					esc_html_e( 'This profile applies to users with this role who are not agency accounts. It hides items on top of what the default menu hides, and follows the default order unless you untick that below.', 'admin-menu-swap' );
-				}
-
-				if ( ! empty( $current['users'] ) ) {
-					echo ' ';
-					/* translators: %s: comma-separated user names. */
-					echo esc_html( sprintf( __( 'Now: %s.', 'admin-menu-swap' ), implode( ', ', $current['users'] ) ) );
-				}
-				?>
-			</p>
-
-			<?php if ( 'preset' === $saved['source'] ) : ?>
-				<div class="notice notice-info inline">
-					<p>
-						<?php
-						echo esc_html(
-							$is_default
-								? __( 'This menu follows the site\'s preset, which also groups the items of plugins you activate later. Saving makes this order your own; "Reset to preset" returns to the preset.', 'admin-menu-swap' )
-								: __( 'This profile comes from the site\'s preset. Saving makes it your own; "Reset to preset" returns to the preset.', 'admin-menu-swap' )
-						);
-						?>
-					</p>
-				</div>
-			<?php elseif ( 'inherit' === $saved['source'] ) : ?>
-				<div class="notice notice-info inline">
-					<p><?php esc_html_e( 'This role has no profile yet, so it gets the default menu. Saving creates its profile.', 'admin-menu-swap' ); ?></p>
-				</div>
-			<?php endif; ?>
-
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-form">
-				<ul id="amswap-menu-list">
+			<nav class="amswap-profiles" aria-label="<?php esc_attr_e( 'Menu profiles', 'admin-menu-swap' ); ?>">
+				<?php foreach ( $profiles as $option ) : ?>
 					<?php
-					foreach ( $items as $item ) {
-						$this->render_item( $item );
-					}
+					$url   = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
+					$url   = AMSwap_Order_Store::DEFAULT_PROFILE === $option['key'] ? $url : add_query_arg( 'profile', $option['key'], $url );
+					$label = AMSwap_Order_Store::DEFAULT_PROFILE === $option['key'] ? __( 'Default menu', 'admin-menu-swap' ) : $option['label'];
 					?>
-				</ul>
+					<a href="<?php echo esc_url( $url ); ?>"
+						class="amswap-profile amswap-source-<?php echo esc_attr( $option['source'] ); ?><?php echo $option['key'] === $profile ? ' is-current' : ''; ?>"
+						<?php echo $option['key'] === $profile ? 'aria-current="page"' : ''; ?>
+						title="<?php echo esc_attr( $this->source_label( $option['source'] ) ); ?>">
+						<span class="amswap-profile-name"><?php echo esc_html( $label ); ?></span>
+						<?php if ( ! empty( $option['users'] ) ) : ?>
+							<span class="amswap-profile-count"><?php echo esc_html( (string) count( $option['users'] ) ); ?></span>
+						<?php endif; ?>
+					</a>
+				<?php endforeach; ?>
+			</nav>
 
-				<?php if ( $is_default ) : ?>
-					<div class="amswap-color">
-						<label for="amswap_separator_color"><?php esc_html_e( 'Separator color', 'admin-menu-swap' ); ?></label>
-						<input type="text" name="amswap_separator_color" id="amswap_separator_color" value="<?php echo esc_attr( $saved['separator_color'] ); ?>" />
-						<p class="description"><?php esc_html_e( 'Colors the separators in the admin menu, for every profile. Clear it to keep the admin color scheme\'s default.', 'admin-menu-swap' ); ?></p>
+			<div class="amswap-layout">
+				<section class="amswap-menu" aria-labelledby="amswap-menu-title">
+					<div class="amswap-menu-head">
+						<h2 id="amswap-menu-title"><?php esc_html_e( 'Admin menu', 'admin-menu-swap' ); ?></h2>
+						<span class="amswap-count" id="amswap-count" aria-live="polite">
+							<?php
+							/* translators: 1: number of menu items, 2: number of hidden items. */
+							echo esc_html( sprintf( __( '%1$d items, %2$d hidden', 'admin-menu-swap' ), count( $rows ), count( $hidden ) ) );
+							?>
+						</span>
 					</div>
-				<?php else : ?>
-					<p class="amswap-follow">
-						<label>
-							<input type="checkbox" name="amswap_follow_default" value="1" <?php checked( $saved['follows_default_order'] ); ?> />
-							<?php esc_html_e( 'Follow the default order (only the hidden items are this profile\'s own)', 'admin-menu-swap' ); ?>
-						</label>
+
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-form">
+						<ul id="amswap-menu-list" style="<?php echo esc_attr( $list_style ); ?>">
+							<?php
+							foreach ( $items as $item ) {
+								$this->render_item( $item );
+							}
+							?>
+						</ul>
+
+						<input type="hidden" name="action" value="amswap_save" />
+						<input type="hidden" name="amswap_profile" value="<?php echo esc_attr( $profile ); ?>" />
+						<input type="hidden" name="amswap_order" id="amswap_order" value="" />
+						<input type="hidden" name="amswap_hidden" id="amswap_hidden" value="" />
+						<input type="hidden" name="amswap_removed" id="amswap_removed" value="<?php echo esc_attr( $removed_json ); ?>" />
+						<?php wp_nonce_field( 'amswap_save' ); ?>
+					</form>
+
+					<div class="amswap-menu-foot">
+						<button type="button" class="amswap-add" id="amswap-add-separator">
+							<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+							<?php esc_html_e( 'Add separator', 'admin-menu-swap' ); ?>
+						</button>
+						<span class="amswap-hint"><?php esc_html_e( 'Drag by the handle, or focus it and use the arrow keys.', 'admin-menu-swap' ); ?></span>
+					</div>
+				</section>
+
+				<aside class="amswap-side">
+					<section class="amswap-side-section">
+						<h2><?php esc_html_e( 'Who sees this menu', 'admin-menu-swap' ); ?></h2>
+						<p>
+							<?php
+							echo esc_html(
+								$is_default
+									? __( 'Agency accounts, and every role without a profile of its own.', 'admin-menu-swap' )
+									: __( 'Users with this role who are not agency accounts. The profile hides items on top of what the default menu hides.', 'admin-menu-swap' )
+							);
+							?>
+						</p>
+
+						<?php if ( ! empty( $current['users'] ) ) : ?>
+							<ul class="amswap-users">
+								<?php foreach ( $current['users'] as $login ) : ?>
+									<li><?php echo esc_html( $login ); ?></li>
+								<?php endforeach; ?>
+							</ul>
+						<?php else : ?>
+							<p class="amswap-muted"><?php esc_html_e( 'Nobody gets this menu right now.', 'admin-menu-swap' ); ?></p>
+						<?php endif; ?>
+
+						<p class="amswap-source">
+							<?php echo esc_html( $this->source_text( $saved['source'], $is_default ) ); ?>
+						</p>
+
+						<?php if ( ! $is_default ) : ?>
+							<label class="amswap-check">
+								<input type="checkbox" name="amswap_follow_default" value="1" form="amswap-form" <?php checked( $saved['follows_default_order'] ); ?> />
+								<?php esc_html_e( 'Follow the default order', 'admin-menu-swap' ); ?>
+							</label>
+						<?php endif; ?>
+					</section>
+
+					<?php if ( $is_default ) : ?>
+						<section class="amswap-side-section">
+							<h2><label for="amswap_separator_color"><?php esc_html_e( 'Separator color', 'admin-menu-swap' ); ?></label></h2>
+							<input type="text" name="amswap_separator_color" id="amswap_separator_color" form="amswap-form" value="<?php echo esc_attr( $saved['separator_color'] ); ?>" />
+							<p class="amswap-muted"><?php esc_html_e( 'Shared by every profile. Clear it to keep the color scheme\'s own.', 'admin-menu-swap' ); ?></p>
+						</section>
+					<?php endif; ?>
+
+					<section class="amswap-side-section amswap-actions">
+						<div class="amswap-save">
+							<button type="submit" form="amswap-form" class="button button-primary"><?php esc_html_e( 'Save changes', 'admin-menu-swap' ); ?></button>
+							<span class="amswap-dirty" id="amswap-dirty" hidden><?php esc_html_e( 'Unsaved changes', 'admin-menu-swap' ); ?></span>
+						</div>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-reset-form">
+							<input type="hidden" name="action" value="amswap_reset" />
+							<input type="hidden" name="amswap_profile" value="<?php echo esc_attr( $profile ); ?>" />
+							<?php wp_nonce_field( 'amswap_reset' ); ?>
+							<button type="submit" class="button-link amswap-reset"><?php echo esc_html( $this->reset_label( $profile, $has_preset ) ); ?></button>
+						</form>
+					</section>
+
+					<?php if ( $is_default ) : ?>
+						<section class="amswap-side-section">
+							<?php $this->render_agency_form(); ?>
+						</section>
+					<?php endif; ?>
+
+					<p class="amswap-note">
+						<?php esc_html_e( 'Hiding takes an item out of the menu; its page stays reachable by URL. Roles and capabilities decide who may open it.', 'admin-menu-swap' ); ?>
 					</p>
-				<?php endif; ?>
-
-				<p class="amswap-actions">
-					<button type="button" class="button" id="amswap-add-separator">
-						<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
-						<?php esc_html_e( 'Add separator', 'admin-menu-swap' ); ?>
-					</button>
-					<?php submit_button( __( 'Save changes', 'admin-menu-swap' ), 'primary', 'submit', false ); ?>
-				</p>
-
-				<input type="hidden" name="action" value="amswap_save" />
-				<input type="hidden" name="amswap_profile" value="<?php echo esc_attr( $profile ); ?>" />
-				<input type="hidden" name="amswap_order" id="amswap_order" value="" />
-				<input type="hidden" name="amswap_hidden" id="amswap_hidden" value="" />
-				<input type="hidden" name="amswap_removed" id="amswap_removed" value="<?php echo esc_attr( $removed_json ); ?>" />
-				<?php wp_nonce_field( 'amswap_save' ); ?>
-			</form>
+				</aside>
+			</div>
 
 			<template id="amswap-separator-template">
 				<?php
@@ -269,68 +317,60 @@ class AMSwap_Admin {
 				);
 				?>
 			</template>
-
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-reset-form">
-				<input type="hidden" name="action" value="amswap_reset" />
-				<input type="hidden" name="amswap_profile" value="<?php echo esc_attr( $profile ); ?>" />
-				<?php wp_nonce_field( 'amswap_reset' ); ?>
-				<?php submit_button( $this->reset_label( $profile, $has_preset ), 'secondary', 'submit', false ); ?>
-			</form>
-
-			<?php
-			if ( $is_default ) {
-				$this->render_agency_form();
-			}
-			?>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Render the agency accounts form.
+	 * Render the agency accounts form, folded away.
 	 */
 	protected function render_agency_form() {
 		$settings = AMSwap_Agency::get();
 		?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-agency-form">
-			<h2><?php esc_html_e( 'Agency accounts', 'admin-menu-swap' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Agency accounts always get the default menu and are the only ones who can open this page. An administrator is one when their email address is on an agency domain or when they are ticked below.', 'admin-menu-swap' ); ?></p>
+		<details class="amswap-agency">
+			<summary><h2><?php esc_html_e( 'Agency accounts', 'admin-menu-swap' ); ?></h2></summary>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-agency-form">
+				<p class="amswap-muted"><?php esc_html_e( 'They always get the default menu and are the only ones who can open this page.', 'admin-menu-swap' ); ?></p>
 
-			<p>
-				<label for="amswap_agency_domains"><strong><?php esc_html_e( 'Agency email domains', 'admin-menu-swap' ); ?></strong></label><br />
-				<input type="text" class="regular-text" name="amswap_agency_domains" id="amswap_agency_domains" value="<?php echo esc_attr( implode( ', ', $settings['domains'] ) ); ?>" />
-			</p>
+				<p>
+					<label for="amswap_agency_domains"><?php esc_html_e( 'Email domains', 'admin-menu-swap' ); ?></label>
+					<input type="text" class="widefat" name="amswap_agency_domains" id="amswap_agency_domains" value="<?php echo esc_attr( implode( ', ', $settings['domains'] ) ); ?>" />
+				</p>
 
-			<fieldset>
-				<legend><strong><?php esc_html_e( 'Administrators', 'admin-menu-swap' ); ?></strong></legend>
-				<?php foreach ( AMSwap_Agency::administrators() as $user ) : ?>
-					<?php
-					$by_domain = AMSwap_Agency::qualifies(
-						$user,
-						array(
-							'domains' => $settings['domains'],
-							'users'   => array(),
-						)
-					);
-					?>
-					<label class="amswap-agency-user">
-						<input type="checkbox" name="amswap_agency_users[]" value="<?php echo esc_attr( (string) $user->ID ); ?>" <?php checked( in_array( (int) $user->ID, $settings['users'], true ) ); ?> />
-						<?php echo esc_html( $user->user_login . ' <' . $user->user_email . '>' ); ?>
-						<?php if ( $by_domain ) : ?>
-							<span class="amswap-badge amswap-badge-on"><?php esc_html_e( 'Agency by domain', 'admin-menu-swap' ); ?></span>
-						<?php endif; ?>
-					</label>
-				<?php endforeach; ?>
-			</fieldset>
+				<fieldset>
+					<legend><?php esc_html_e( 'Administrators', 'admin-menu-swap' ); ?></legend>
+					<?php foreach ( AMSwap_Agency::administrators() as $user ) : ?>
+						<?php
+						$by_domain = AMSwap_Agency::qualifies(
+							$user,
+							array(
+								'domains' => $settings['domains'],
+								'users'   => array(),
+							)
+						);
+						?>
+						<label class="amswap-check">
+							<input type="checkbox" name="amswap_agency_users[]" value="<?php echo esc_attr( (string) $user->ID ); ?>" <?php checked( in_array( (int) $user->ID, $settings['users'], true ) ); ?> />
+							<span>
+								<?php echo esc_html( $user->user_login ); ?>
+								<span class="amswap-muted"><?php echo esc_html( $user->user_email ); ?></span>
+								<?php if ( $by_domain ) : ?>
+									<span class="amswap-badge"><?php esc_html_e( 'by domain', 'admin-menu-swap' ); ?></span>
+								<?php endif; ?>
+							</span>
+						</label>
+					<?php endforeach; ?>
+				</fieldset>
 
-			<?php if ( ! AMSwap_Agency::any_agency_account() ) : ?>
-				<p class="description"><?php esc_html_e( 'No administrator qualifies yet, so every administrator counts as an agency account for now.', 'admin-menu-swap' ); ?></p>
-			<?php endif; ?>
+				<?php if ( ! AMSwap_Agency::any_agency_account() ) : ?>
+					<p class="amswap-muted"><?php esc_html_e( 'No administrator qualifies yet, so every administrator counts as an agency account for now.', 'admin-menu-swap' ); ?></p>
+				<?php endif; ?>
 
-			<input type="hidden" name="action" value="amswap_save_agency" />
-			<?php wp_nonce_field( 'amswap_save_agency' ); ?>
-			<?php submit_button( __( 'Save agency accounts', 'admin-menu-swap' ), 'secondary', 'submit', false ); ?>
-		</form>
+				<input type="hidden" name="action" value="amswap_save_agency" />
+				<?php wp_nonce_field( 'amswap_save_agency' ); ?>
+				<button type="submit" class="button"><?php esc_html_e( 'Save agency accounts', 'admin-menu-swap' ); ?></button>
+			</form>
+		</details>
 		<?php
 	}
 
@@ -354,27 +394,38 @@ class AMSwap_Admin {
 		if ( ! empty( $item['no_access'] ) ) {
 			$classes .= ' amswap-no-access';
 		}
+
+		$move = $is_separator
+			? __( 'Move separator', 'admin-menu-swap' )
+			/* translators: %s: menu item title. */
+			: sprintf( __( 'Move %s', 'admin-menu-swap' ), $item['title'] );
 		?>
 		<li class="<?php echo esc_attr( $classes ); ?>"
 			data-slug="<?php echo esc_attr( $item['slug'] ); ?>"
 			data-separator="<?php echo $is_separator ? '1' : '0'; ?>"
 			data-core-separator="<?php echo $is_core_sep ? '1' : '0'; ?>"
 			data-hidden="<?php echo $is_hidden ? '1' : '0'; ?>">
+			<button type="button" class="amswap-handle" aria-label="<?php echo esc_attr( $move ); ?>" title="<?php echo esc_attr( $move ); ?>">
+				<span class="dashicons dashicons-menu" aria-hidden="true"></span>
+			</button>
 			<?php if ( $is_separator ) : ?>
 				<span class="amswap-sep-line" aria-hidden="true"></span>
-				<span class="amswap-sep-label"><?php esc_html_e( 'Separator', 'admin-menu-swap' ); ?></span>
-				<span class="amswap-sep-line" aria-hidden="true"></span>
-				<button type="button" class="amswap-remove" aria-label="<?php esc_attr_e( 'Remove separator', 'admin-menu-swap' ); ?>" title="<?php esc_attr_e( 'Remove separator', 'admin-menu-swap' ); ?>">&times;</button>
+				<span class="screen-reader-text"><?php esc_html_e( 'Separator', 'admin-menu-swap' ); ?></span>
+				<button type="button" class="amswap-remove" aria-label="<?php esc_attr_e( 'Remove separator', 'admin-menu-swap' ); ?>" title="<?php esc_attr_e( 'Remove separator', 'admin-menu-swap' ); ?>">
+					<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+				</button>
 			<?php else : ?>
 				<span class="amswap-icon"><?php echo $this->icon_html( $item['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside icon_html(). ?></span>
-				<span class="amswap-title"><?php echo esc_html( $item['title'] ); ?></span>
-				<span class="amswap-badge"><?php esc_html_e( 'Hidden', 'admin-menu-swap' ); ?></span>
+				<span class="amswap-label">
+					<span class="amswap-title"><?php echo esc_html( $item['title'] ); ?></span>
+					<span class="amswap-slug"><?php echo esc_html( $item['slug'] ); ?></span>
+				</span>
+				<span class="amswap-badge amswap-badge-hidden"><?php esc_html_e( 'Hidden', 'admin-menu-swap' ); ?></span>
 				<?php if ( ! empty( $item['no_access'] ) ) : ?>
-					<span class="amswap-badge amswap-badge-on" title="<?php esc_attr_e( 'This role cannot open this page, so it never sees the item anyway.', 'admin-menu-swap' ); ?>"><?php esc_html_e( 'No access', 'admin-menu-swap' ); ?></span>
+					<span class="amswap-badge" title="<?php esc_attr_e( 'This role cannot open this page, so it never sees the item anyway.', 'admin-menu-swap' ); ?>"><?php esc_html_e( 'No access', 'admin-menu-swap' ); ?></span>
 				<?php endif; ?>
 				<?php $this->render_toggle( $is_hidden, ! empty( $item['is_protected'] ) ); ?>
 			<?php endif; ?>
-			<span class="amswap-handle dashicons dashicons-menu" title="<?php esc_attr_e( 'Drag to reorder', 'admin-menu-swap' ); ?>" aria-hidden="true"></span>
 		</li>
 		<?php
 	}
@@ -592,6 +643,28 @@ class AMSwap_Admin {
 				return __( 'uses the default menu', 'admin-menu-swap' );
 			default:
 				return __( 'WordPress default', 'admin-menu-swap' );
+		}
+	}
+
+	/**
+	 * One sentence on where the shown profile's settings come from.
+	 *
+	 * @param string $source     'saved', 'preset', 'default' or 'inherit'.
+	 * @param bool   $is_default Whether this is the default profile.
+	 * @return string
+	 */
+	protected function source_text( $source, $is_default ) {
+		switch ( $source ) {
+			case 'saved':
+				return __( 'Saved on this page.', 'admin-menu-swap' );
+			case 'preset':
+				return $is_default
+					? __( 'From the site\'s preset, which also places plugins activated later. Saving makes it your own.', 'admin-menu-swap' )
+					: __( 'From the site\'s preset. Saving makes it your own.', 'admin-menu-swap' );
+			case 'inherit':
+				return __( 'No profile yet: this role gets the default menu. Saving creates its profile.', 'admin-menu-swap' );
+			default:
+				return __( 'The WordPress menu, unchanged. Saving stores your order.', 'admin-menu-swap' );
 		}
 	}
 
