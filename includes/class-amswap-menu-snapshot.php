@@ -219,6 +219,7 @@ class AMSwap_Menu_Snapshot {
 	 *     @type string $title        Clean text title, '' for separators.
 	 *     @type string $icon         Raw icon value ($item[6]), '' for separators.
 	 *     @type bool   $is_separator Whether the row is a separator.
+	 *     @type string $capability   Capability the item needs ($item[1]).
 	 * }
 	 */
 	public static function items_from_menu( $menu ) {
@@ -238,6 +239,7 @@ class AMSwap_Menu_Snapshot {
 				'title'        => $is_separator ? '' : self::clean_title( isset( $row[0] ) ? (string) $row[0] : '', $slug ),
 				'icon'         => ( $is_separator || ! isset( $row[6] ) ) ? '' : (string) $row[6],
 				'is_separator' => $is_separator,
+				'capability'   => isset( $row[1] ) ? (string) $row[1] : '',
 			);
 		}
 

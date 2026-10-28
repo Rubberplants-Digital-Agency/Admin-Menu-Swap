@@ -12,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers amswap/get-menu, amswap/update-menu-order and
- * amswap/reset-menu-order. All three need manage_options, the same
- * capability as the settings page, and validate through the same store.
+ * amswap/reset-menu-order. All three are for agency accounts (see
+ * AMSwap_Agency), like the settings page, and validate through the same store.
  */
 class AMSwap_Abilities {
 
@@ -38,7 +38,7 @@ class AMSwap_Abilities {
 			self::CATEGORY,
 			array(
 				'label'       => __( 'Admin Menu Swap', 'admin-menu-swap' ),
-				'description' => __( 'Order, hide and group the items of the WordPress admin menu.', 'admin-menu-swap' ),
+				'description' => __( 'Order, hide and group the items of the WordPress admin menu, per role.', 'admin-menu-swap' ),
 			)
 		);
 	}
@@ -52,29 +52,40 @@ class AMSwap_Abilities {
 			'items' => array( 'type' => 'string' ),
 		);
 
+		$profile = array(
+			'type'        => 'string',
+			'default'     => AMSwap_Order_Store::DEFAULT_PROFILE,
+			'description' => __( 'Menu profile: "default" (agency accounts and roles without a profile) or a role such as "administrator", "editor" or "shop_manager". amswap/get-menu lists the profiles.', 'admin-menu-swap' ),
+		);
+
 		wp_register_ability(
 			'amswap/get-menu',
 			array(
 				'label'               => __( 'Get admin menu', 'admin-menu-swap' ),
-				'description'         => __( 'Returns the top-level WordPress admin menu in display order: each item\'s slug, title, whether it is hidden and its preset group. Also returns what orders the menu (source: saved, preset or default), the effective settings (order, hidden, removed separators, separator color), the preset groups with the slugs no preset pattern names, and the age of the menu snapshot the answer is based on. Use it before amswap/update-menu-order to get the exact slugs.', 'admin-menu-swap' ),
+				'description'         => __( 'Returns the top-level WordPress admin menu of one profile (default: "default") in display order: each item\'s slug, title, whether it is hidden and its preset group. Also returns where the profile\'s settings come from (source: saved, preset, default, or inherit for a role that uses the default menu), its effective settings (order, hidden, removed separators, separator color, follows_default_order), the preset groups with the slugs no preset pattern names, every profile with the users it applies to, the agency accounts (they always get the default profile) and the age of the menu snapshot. Use it before amswap/update-menu-order to get the exact slugs.', 'admin-menu-swap' ),
 				'category'            => self::CATEGORY,
 				'input_schema'        => array(
 					'type'                 => 'object',
-					'properties'           => array(),
+					'properties'           => array(
+						'profile' => $profile,
+					),
 					'additionalProperties' => false,
 					'default'              => array(),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
 					'properties' => array(
+						'profile'  => array( 'type' => 'string' ),
 						'source'   => array(
 							'type' => 'string',
-							'enum' => array( 'saved', 'preset', 'default' ),
+							'enum' => array( 'saved', 'preset', 'default', 'inherit' ),
 						),
 						'snapshot' => array( 'type' => 'object' ),
 						'settings' => array( 'type' => 'object' ),
 						'items'    => array( 'type' => 'array' ),
 						'preset'   => array( 'type' => array( 'object', 'null' ) ),
+						'profiles' => array( 'type' => 'array' ),
+						'agency'   => array( 'type' => 'object' ),
 						'notice'   => array( 'type' => 'string' ),
 					),
 				),
@@ -96,30 +107,34 @@ class AMSwap_Abilities {
 			'amswap/update-menu-order',
 			array(
 				'label'               => __( 'Update admin menu order', 'admin-menu-swap' ),
-				'description'         => __( 'Saves the order of the top-level WordPress admin menu, for all users, as the settings page does. order lists every slug in the wanted order; put "separator-amswap" entries where a separator belongs (they are renumbered). Separators of core and plugins that are not in order are removed. hidden replaces the hidden items and separator_color the separator color (#rrggbb, "" for the default); leave them out to keep the current values. Slugs must exist in the menu (see amswap/get-menu); unknown slugs are refused. Afterwards the preset no longer applies until amswap/reset-menu-order.', 'admin-menu-swap' ),
+				'description'         => __( 'Saves the top-level WordPress admin menu of one profile, as the settings page does. profile is "default" (agency accounts and roles without a profile) or a role. order lists every slug in the wanted order; put "separator-amswap" entries where a separator belongs (they are renumbered); separators of core and plugins that are not in order are removed. For a role profile, leave order out (or set follow_default_order) to follow the default order and only set hidden. hidden replaces the hidden items; leave it out to keep the current ones. separator_color (#rrggbb, "" for the default) is shared and only accepted for the default profile. Slugs must exist in the menu (see amswap/get-menu); unknown slugs are refused. Afterwards the preset no longer applies to that profile until amswap/reset-menu-order.', 'admin-menu-swap' ),
 				'category'            => self::CATEGORY,
 				'input_schema'        => array(
 					'type'                 => 'object',
 					'properties'           => array(
-						'order'           => $slug_list + array(
-							'minItems'    => 1,
-							'description' => __( 'Every top-level slug in the wanted order, with "separator-amswap" entries for separators.', 'admin-menu-swap' ),
+						'profile'              => $profile,
+						'order'                => $slug_list + array(
+							'description' => __( 'Every top-level slug in the wanted order, with "separator-amswap" entries for separators. Required for the default profile.', 'admin-menu-swap' ),
 						),
-						'hidden'          => $slug_list + array(
+						'follow_default_order' => array(
+							'type'        => 'boolean',
+							'description' => __( 'Role profiles only: follow the default order and ignore order.', 'admin-menu-swap' ),
+						),
+						'hidden'               => $slug_list + array(
 							'description' => __( 'Slugs to hide from the menu. Leave out to keep the current hidden items.', 'admin-menu-swap' ),
 						),
-						'separator_color' => array(
+						'separator_color'      => array(
 							'type'        => 'string',
-							'description' => __( 'Separator color as #rrggbb, or "" for the admin color scheme default. Leave out to keep the current color.', 'admin-menu-swap' ),
+							'description' => __( 'Default profile only: separator color as #rrggbb, or "" for the admin color scheme default. Leave out to keep the current color.', 'admin-menu-swap' ),
 						),
 					),
-					'required'             => array( 'order' ),
 					'additionalProperties' => false,
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
 					'properties' => array(
 						'saved'    => array( 'type' => 'boolean' ),
+						'profile'  => array( 'type' => 'string' ),
 						'settings' => array( 'type' => 'object' ),
 						'missing'  => $slug_list,
 						'warning'  => array( 'type' => 'string' ),
@@ -143,21 +158,24 @@ class AMSwap_Abilities {
 			'amswap/reset-menu-order',
 			array(
 				'label'               => __( 'Reset admin menu order', 'admin-menu-swap' ),
-				'description'         => __( 'Deletes the saved admin menu order, hidden items and separator color. The menu then follows the site\'s preset again, or the WordPress default when there is none. Returns which of the two applies now.', 'admin-menu-swap' ),
+				'description'         => __( 'Deletes the saved settings of one profile (default: "default"). The default profile then follows the site\'s preset again, or the WordPress default when there is none; a role profile follows the preset\'s profile for that role, or the default menu. Returns what applies now.', 'admin-menu-swap' ),
 				'category'            => self::CATEGORY,
 				'input_schema'        => array(
 					'type'                 => 'object',
-					'properties'           => array(),
+					'properties'           => array(
+						'profile' => $profile,
+					),
 					'additionalProperties' => false,
 					'default'              => array(),
 				),
 				'output_schema'       => array(
 					'type'       => 'object',
 					'properties' => array(
-						'reset'  => array( 'type' => 'boolean' ),
-						'source' => array(
+						'reset'   => array( 'type' => 'boolean' ),
+						'profile' => array( 'type' => 'string' ),
+						'source'  => array(
 							'type' => 'string',
-							'enum' => array( 'preset', 'default' ),
+							'enum' => array( 'preset', 'default', 'inherit' ),
 						),
 					),
 				),
@@ -177,21 +195,28 @@ class AMSwap_Abilities {
 	}
 
 	/**
-	 * Permission check shared by the abilities.
+	 * Permission check shared by the abilities: agency accounts only.
 	 *
 	 * @return bool
 	 */
 	public function can_manage() {
-		return current_user_can( 'manage_options' );
+		return current_user_can( 'manage_options' ) && AMSwap_Agency::is_agency();
 	}
 
 	/**
 	 * Execute amswap/get-menu.
 	 *
-	 * @return array
+	 * @param array $input Validated input.
+	 * @return array|WP_Error
 	 */
-	public function get_menu() {
-		return AMSwap_Menu_Model::describe();
+	public function get_menu( $input = array() ) {
+		$profile = $this->profile( $input );
+
+		if ( is_wp_error( $profile ) ) {
+			return $profile;
+		}
+
+		return AMSwap_Menu_Model::describe( $profile );
 	}
 
 	/**
@@ -201,25 +226,44 @@ class AMSwap_Abilities {
 	 * @return array|WP_Error
 	 */
 	public function update_menu_order( $input ) {
-		$current  = AMSwap_Menu_Model::describe()['settings'];
+		$profile = $this->profile( $input );
+
+		if ( is_wp_error( $profile ) ) {
+			return $profile;
+		}
+
+		$is_default = AMSwap_Order_Store::DEFAULT_PROFILE === $profile;
+		$follow     = ! $is_default && ( ! empty( $input['follow_default_order'] ) || ! isset( $input['order'] ) );
+
+		if ( $is_default && empty( $input['order'] ) ) {
+			return new WP_Error( 'amswap_empty_order', __( 'order is required for the default profile.', 'admin-menu-swap' ) );
+		}
+
+		if ( ! $is_default && isset( $input['separator_color'] ) ) {
+			return new WP_Error( 'amswap_color_is_shared', __( 'separator_color is shared by all profiles; set it on the default profile.', 'admin-menu-swap' ) );
+		}
+
+		$current  = AMSwap_Menu_Model::describe( $profile )['settings'];
 		$snapshot = AMSwap_Menu_Snapshot::get();
 
-		// "separator-amswap" without a number is accepted as a new separator.
-		$order = array_map(
-			static function ( $slug ) {
-				return 'separator-amswap' === $slug ? AMSwap_Menu_Reorder::CUSTOM_SEPARATOR_PREFIX . 'new' : $slug;
-			},
-			$input['order']
-		);
-		$order = $this->number_new_separators( $order );
-		$order = AMSwap_Order_Store::sanitize_order( $order );
+		$order = array();
+		if ( ! $follow ) {
+			// "separator-amswap" without a number is accepted as a new separator.
+			$order = array_map(
+				static function ( $slug ) {
+					return 'separator-amswap' === $slug ? AMSwap_Menu_Reorder::CUSTOM_SEPARATOR_PREFIX . 'new' : $slug;
+				},
+				$input['order']
+			);
+			$order = AMSwap_Order_Store::sanitize_order( $this->number_new_separators( $order ) );
 
-		$hidden = AMSwap_Order_Store::sanitize_hidden( isset( $input['hidden'] ) ? $input['hidden'] : $current['hidden'] );
-		$color  = isset( $input['separator_color'] ) ? AMSwap_Order_Store::sanitize_color( $input['separator_color'] ) : $current['separator_color'];
-
-		if ( empty( $order ) ) {
-			return new WP_Error( 'amswap_empty_order', __( 'The order is empty after validation.', 'admin-menu-swap' ) );
+			if ( empty( $order ) ) {
+				return new WP_Error( 'amswap_empty_order', __( 'The order is empty after validation.', 'admin-menu-swap' ) );
+			}
 		}
+
+		$hidden = AMSwap_Order_Store::sanitize_hidden( isset( $input['hidden'] ) ? $input['hidden'] : $current['hidden'], $profile );
+		$color  = isset( $input['separator_color'] ) ? AMSwap_Order_Store::sanitize_color( $input['separator_color'] ) : $current['separator_color'];
 
 		if ( isset( $input['separator_color'] ) && '' !== $input['separator_color'] && '' === $color ) {
 			return new WP_Error( 'amswap_invalid_color', __( 'separator_color must be a hex color such as #eb6728, or "".', 'admin-menu-swap' ) );
@@ -239,11 +283,11 @@ class AMSwap_Abilities {
 				$known[] = $item['slug'];
 
 				// Core and plugin separators the order leaves out are removed.
-				if ( $item['is_separator'] && ! AMSwap_Menu_Reorder::is_custom_separator( $item['slug'] ) && ! in_array( $item['slug'], $order, true ) ) {
+				if ( ! $follow && $item['is_separator'] && ! AMSwap_Menu_Reorder::is_custom_separator( $item['slug'] ) && ! in_array( $item['slug'], $order, true ) ) {
 					$removed[] = $item['slug'];
 				}
 
-				if ( ! $item['is_separator'] && ! in_array( $item['slug'], $order, true ) ) {
+				if ( ! $follow && ! $item['is_separator'] && ! in_array( $item['slug'], $order, true ) ) {
 					$missing[] = $item['slug'];
 				}
 			}
@@ -271,11 +315,18 @@ class AMSwap_Abilities {
 			}
 		}
 
-		AMSwap_Order_Store::save( $order, AMSwap_Order_Store::sanitize_removed( $removed ), $hidden, $color );
+		$removed = AMSwap_Order_Store::sanitize_removed( $removed );
+
+		if ( $is_default ) {
+			AMSwap_Order_Store::save( $order, $removed, $hidden, $color );
+		} else {
+			AMSwap_Order_Store::save_profile( $profile, $order, $removed, $hidden );
+		}
 
 		return array(
 			'saved'    => true,
-			'settings' => AMSwap_Menu_Model::describe()['settings'],
+			'profile'  => $profile,
+			'settings' => AMSwap_Menu_Model::describe( $profile )['settings'],
 			'missing'  => $missing,
 			'warning'  => $warning,
 		);
@@ -284,15 +335,54 @@ class AMSwap_Abilities {
 	/**
 	 * Execute amswap/reset-menu-order.
 	 *
-	 * @return array
+	 * @param array $input Validated input.
+	 * @return array|WP_Error
 	 */
-	public function reset_menu_order() {
-		AMSwap_Order_Store::reset();
+	public function reset_menu_order( $input = array() ) {
+		$profile = $this->profile( $input );
+
+		if ( is_wp_error( $profile ) ) {
+			return $profile;
+		}
+
+		AMSwap_Order_Store::reset_profile( $profile );
+
+		$preset = AMSwap_Preset::get();
+
+		if ( AMSwap_Order_Store::DEFAULT_PROFILE === $profile ) {
+			$source = null === $preset ? 'default' : 'preset';
+		} else {
+			$source = isset( $preset['profiles'][ $profile ] ) ? 'preset' : 'inherit';
+		}
 
 		return array(
-			'reset'  => true,
-			'source' => null === AMSwap_Preset::get() ? 'default' : 'preset',
+			'reset'   => true,
+			'profile' => $profile,
+			'source'  => $source,
 		);
+	}
+
+	/**
+	 * The profile from the input, validated.
+	 *
+	 * @param array $input Ability input.
+	 * @return string|WP_Error
+	 */
+	protected function profile( $input ) {
+		$profile = isset( $input['profile'] ) && '' !== $input['profile'] ? (string) $input['profile'] : AMSwap_Order_Store::DEFAULT_PROFILE;
+
+		if ( ! AMSwap_Order_Store::is_profile( $profile ) ) {
+			return new WP_Error(
+				'amswap_unknown_profile',
+				sprintf(
+					/* translators: %s: profile key. */
+					__( 'Unknown profile "%s". Use "default" or a role; amswap/get-menu lists them.', 'admin-menu-swap' ),
+					$profile
+				)
+			);
+		}
+
+		return $profile;
 	}
 
 	/**

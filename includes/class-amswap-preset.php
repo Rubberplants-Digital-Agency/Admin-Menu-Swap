@@ -40,7 +40,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  *         ),
  *         'hidden'          => array( 'edit-comments.php' ),
  *         'separator_color' => '#eb6728',
+ *         'profiles'        => array(
+ *             'administrator' => array(
+ *                 'label'       => 'Client administrator',
+ *                 'hide_groups' => array( 'developer' ),
+ *                 'show'        => array( 'users.php' ),
+ *                 'hidden'      => array( 'wpmudev' ),
+ *             ),
+ *         ),
  *     )
+ *
+ * A profile applies to users with that role who are not agency accounts
+ * (see AMSwap_Agency). It keeps the default order and hides what the
+ * default hides, plus its hide_groups and hidden patterns, minus show.
  */
 class AMSwap_Preset {
 
@@ -67,6 +79,7 @@ class AMSwap_Preset {
 	 *     @type array[]  $groups          Groups with key, label, requires and items.
 	 *     @type string[] $hidden          Slug patterns to hide.
 	 *     @type string   $separator_color Hex color, or ''.
+	 *     @type array[]  $profiles        Role => label, hide_groups, show, hidden.
 	 * }
 	 */
 	public static function get() {
@@ -103,11 +116,60 @@ class AMSwap_Preset {
 			return null;
 		}
 
+		$profiles = array();
+
+		if ( isset( $preset['profiles'] ) && is_array( $preset['profiles'] ) ) {
+			foreach ( $preset['profiles'] as $role => $profile ) {
+				if ( ! is_string( $role ) || '' === $role || AMSwap_Order_Store::DEFAULT_PROFILE === $role || ! is_array( $profile ) ) {
+					continue;
+				}
+
+				$profiles[ $role ] = array(
+					'label'       => isset( $profile['label'] ) ? (string) $profile['label'] : $role,
+					'hide_groups' => isset( $profile['hide_groups'] ) ? self::string_list( (array) $profile['hide_groups'] ) : array(),
+					'show'        => isset( $profile['show'] ) ? self::string_list( (array) $profile['show'] ) : array(),
+					'hidden'      => isset( $profile['hidden'] ) ? self::string_list( (array) $profile['hidden'] ) : array(),
+				);
+			}
+		}
+
 		return array(
 			'groups'          => $groups,
 			'hidden'          => isset( $preset['hidden'] ) ? self::string_list( (array) $preset['hidden'] ) : array(),
 			'separator_color' => AMSwap_Order_Store::sanitize_color( isset( $preset['separator_color'] ) ? $preset['separator_color'] : '' ),
+			'profiles'        => $profiles,
 		);
+	}
+
+	/**
+	 * Resolve a preset role profile to the items it hides: everything the
+	 * default profile hides, plus the items of its hide_groups and the items
+	 * matching its hidden patterns, minus the items matching show.
+	 *
+	 * @param array                 $profile    Normalized profile from get().
+	 * @param array[]               $items      Menu items.
+	 * @param string[]              $base       Slugs the default profile hides.
+	 * @param array<string, string> $groups_map Slug => group key, see group_map().
+	 * @return string[] Hidden slugs.
+	 */
+	public static function resolve_profile( $profile, $items, $base, $groups_map ) {
+		$hidden = $base;
+
+		foreach ( $items as $item ) {
+			$slug = $item['slug'];
+
+			if ( ! empty( $item['is_separator'] ) || in_array( $slug, $hidden, true ) || self::matches_any( $slug, $profile['show'] ) ) {
+				continue;
+			}
+
+			$in_group = isset( $groups_map[ $slug ] ) && in_array( $groups_map[ $slug ], $profile['hide_groups'], true );
+
+			if ( $in_group || self::matches_any( $slug, $profile['hidden'] ) ) {
+				$hidden[] = $slug;
+			}
+		}
+
+		return $hidden;
 	}
 
 	/**

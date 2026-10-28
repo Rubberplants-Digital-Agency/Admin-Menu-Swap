@@ -16,7 +16,7 @@ if ( ! empty( $GLOBALS['amswap_copies'] ) ) {
 	return;
 }
 
-$amswap_options = array( 'amswap_menu_order', 'amswap_menu_snapshot' );
+$amswap_options = array( 'amswap_menu_order', 'amswap_menu_profiles', 'amswap_menu_snapshot', 'amswap_agency' );
 
 if ( is_multisite() ) {
 	// number => 0 removes the default 100-site limit so every site is cleaned.

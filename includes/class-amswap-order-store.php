@@ -27,6 +27,30 @@ class AMSwap_Order_Store {
 	const SCHEMA_VERSION = 3;
 
 	/**
+	 * Option holding the role profiles: role => { version, order, removed,
+	 * hidden }. An empty order follows the default order. Not autoloaded.
+	 */
+	const PROFILES_OPTION = 'amswap_menu_profiles';
+
+	/**
+	 * Key of the default profile: agency accounts and roles without a profile.
+	 */
+	const DEFAULT_PROFILE = 'default';
+
+	/**
+	 * Roles in the order their profile wins for a user with several roles.
+	 * Other roles follow, alphabetically.
+	 */
+	const ROLE_PRIORITY = array( 'administrator', 'shop_manager', 'editor', 'author', 'contributor', 'subscriber' );
+
+	/**
+	 * role_sources() cached per request; emptied when a profile is saved or reset.
+	 *
+	 * @var array|null
+	 */
+	protected static $role_sources = null;
+
+	/**
 	 * Maximum number of entries accepted in the order list.
 	 */
 	const MAX_ORDER_ENTRIES = 300;
@@ -103,27 +127,33 @@ class AMSwap_Order_Store {
 	}
 
 	/**
-	 * The settings that apply to the menu: the saved ones, else the preset
-	 * resolved against the menu items, else the empty defaults.
+	 * The settings that apply to a profile's menu.
 	 *
-	 * @param array[] $items Menu items, see AMSwap_Menu_Snapshot::items_from_menu().
+	 * Default profile: the saved order, else the preset resolved against the
+	 * menu items, else the empty defaults. Role profile: its saved settings
+	 * (an empty order follows the default order), else the preset's profile
+	 * for the role, else the default profile's settings.
+	 *
+	 * @param array[] $items   Menu items, see AMSwap_Menu_Snapshot::items_from_menu().
+	 * @param string  $profile Profile key: 'default' or a role.
 	 * @return array Same shape as get(), plus:
-	 *     @type string     $source 'saved', 'preset' or 'default'.
-	 *     @type array|null $preset The resolved preset (see AMSwap_Preset::resolve()), or null without one.
+	 *     @type string     $profile               The profile key.
+	 *     @type string     $source                'saved', 'preset', 'default' (the WordPress menu) or,
+	 *                                             for a role profile without settings, 'inherit'.
+	 *     @type bool       $follows_default_order Whether the order is the default profile's.
+	 *     @type array|null $preset                The resolved preset (see AMSwap_Preset::resolve()), or null.
 	 */
-	public static function effective( $items ) {
+	public static function effective( $items, $profile = self::DEFAULT_PROFILE ) {
 		$preset   = AMSwap_Preset::get();
 		$resolved = ( null !== $preset && ! empty( $items ) ) ? AMSwap_Preset::resolve( $preset, $items ) : null;
 
 		if ( self::has_saved() ) {
-			return array(
+			$base = array(
 				'source' => 'saved',
 				'preset' => $resolved,
 			) + self::get();
-		}
-
-		if ( null !== $resolved ) {
-			return array(
+		} elseif ( null !== $resolved ) {
+			$base = array(
 				'source'          => 'preset',
 				'preset'          => $resolved,
 				'version'         => self::SCHEMA_VERSION,
@@ -132,12 +162,217 @@ class AMSwap_Order_Store {
 				'hidden'          => $resolved['hidden'],
 				'separator_color' => $resolved['separator_color'],
 			);
+		} else {
+			$base = array(
+				'source' => 'default',
+				'preset' => null,
+			) + self::defaults();
+		}
+
+		$base = array(
+			'profile'               => self::DEFAULT_PROFILE,
+			'follows_default_order' => true,
+		) + $base;
+
+		if ( self::DEFAULT_PROFILE === $profile ) {
+			return $base;
+		}
+
+		$saved = self::get_profile( $profile );
+
+		if ( null !== $saved ) {
+			$follows = empty( $saved['order'] );
+
+			return array(
+				'profile'               => $profile,
+				'source'                => 'saved',
+				'follows_default_order' => $follows,
+				'order'                 => $follows ? $base['order'] : $saved['order'],
+				'removed'               => $follows ? $base['removed'] : $saved['removed'],
+				'hidden'                => $saved['hidden'],
+			) + $base;
+		}
+
+		if ( null !== $resolved && isset( $preset['profiles'][ $profile ] ) ) {
+			return array(
+				'profile' => $profile,
+				'source'  => 'preset',
+				'hidden'  => AMSwap_Preset::resolve_profile( $preset['profiles'][ $profile ], $items, $base['hidden'], AMSwap_Preset::group_map( $resolved ) ),
+			) + $base;
 		}
 
 		return array(
-			'source' => 'default',
-			'preset' => null,
-		) + self::defaults();
+			'profile' => $profile,
+			'source'  => 'inherit',
+		) + $base;
+	}
+
+	/**
+	 * Whether a key names a profile: 'default' or an existing role.
+	 *
+	 * @param string $profile Profile key.
+	 * @return bool
+	 */
+	public static function is_profile( $profile ) {
+		return self::DEFAULT_PROFILE === $profile || ( is_string( $profile ) && wp_roles()->is_role( $profile ) );
+	}
+
+	/**
+	 * The saved settings of a profile, or null when it has none.
+	 *
+	 * @param string $profile Profile key.
+	 * @return array|null Same shape as get() (without separator_color for roles).
+	 */
+	public static function get_profile( $profile ) {
+		if ( self::DEFAULT_PROFILE === $profile ) {
+			return self::has_saved() ? self::get() : null;
+		}
+
+		$all = get_option( self::PROFILES_OPTION );
+
+		if ( ! is_array( $all ) || ! isset( $all[ $profile ] ) || ! is_array( $all[ $profile ] ) ) {
+			return null;
+		}
+
+		$saved = wp_parse_args( $all[ $profile ], self::defaults() );
+
+		foreach ( array( 'order', 'removed', 'hidden' ) as $list ) {
+			if ( ! is_array( $saved[ $list ] ) ) {
+				$saved[ $list ] = array();
+			}
+		}
+
+		unset( $saved['separator_color'] );
+
+		return $saved;
+	}
+
+	/**
+	 * Save a role profile. An empty order follows the default order.
+	 *
+	 * @param string   $profile Role.
+	 * @param string[] $order   Ordered menu slugs, or an empty list.
+	 * @param string[] $removed Removed separator slugs.
+	 * @param string[] $hidden  Hidden menu slugs.
+	 * @return bool Whether the option was updated.
+	 */
+	public static function save_profile( $profile, $order, $removed, $hidden ) {
+		$all = get_option( self::PROFILES_OPTION );
+		$all = is_array( $all ) ? $all : array();
+
+		self::$role_sources = null;
+
+		$all[ $profile ] = array(
+			'version' => self::SCHEMA_VERSION,
+			'order'   => array_values( $order ),
+			'removed' => empty( $order ) ? array() : array_values( $removed ),
+			'hidden'  => array_values( $hidden ),
+		);
+
+		return update_option( self::PROFILES_OPTION, $all, false );
+	}
+
+	/**
+	 * Delete a profile's saved settings: the default profile's order, or a
+	 * role profile.
+	 *
+	 * @param string $profile Profile key.
+	 * @return bool Whether something was deleted.
+	 */
+	public static function reset_profile( $profile ) {
+		if ( self::DEFAULT_PROFILE === $profile ) {
+			return self::reset();
+		}
+
+		$all = get_option( self::PROFILES_OPTION );
+
+		if ( ! is_array( $all ) || ! isset( $all[ $profile ] ) ) {
+			return false;
+		}
+
+		self::$role_sources = null;
+		unset( $all[ $profile ] );
+
+		return empty( $all ) ? delete_option( self::PROFILES_OPTION ) : update_option( self::PROFILES_OPTION, $all, false );
+	}
+
+	/**
+	 * The profile that applies to a user: the default for agency accounts,
+	 * else the profile of their highest-priority role that has one (saved
+	 * or in the preset), else the default.
+	 *
+	 * @param WP_User|null $user User, default the current one.
+	 * @return string Profile key.
+	 */
+	public static function profile_for_user( $user = null ) {
+		$user = null === $user ? wp_get_current_user() : $user;
+
+		if ( ! $user instanceof WP_User || ! $user->exists() || AMSwap_Agency::is_agency( $user ) ) {
+			return self::DEFAULT_PROFILE;
+		}
+
+		$with_profile = array_keys( self::role_sources() );
+
+		foreach ( self::sort_roles( (array) $user->roles ) as $role ) {
+			if ( in_array( $role, $with_profile, true ) ) {
+				return $role;
+			}
+		}
+
+		return self::DEFAULT_PROFILE;
+	}
+
+	/**
+	 * The roles that have a profile, and where it comes from.
+	 *
+	 * @return array<string, string> role => 'saved' or 'preset'.
+	 */
+	public static function role_sources() {
+		if ( null !== self::$role_sources ) {
+			return self::$role_sources;
+		}
+
+		$sources = array();
+		$preset  = AMSwap_Preset::get();
+
+		if ( null !== $preset ) {
+			foreach ( array_keys( $preset['profiles'] ) as $role ) {
+				$sources[ $role ] = 'preset';
+			}
+		}
+
+		$saved = get_option( self::PROFILES_OPTION );
+		if ( is_array( $saved ) ) {
+			foreach ( array_keys( $saved ) as $role ) {
+				$sources[ $role ] = 'saved';
+			}
+		}
+
+		self::$role_sources = $sources;
+
+		return $sources;
+	}
+
+	/**
+	 * Sort role keys by ROLE_PRIORITY, other roles after them alphabetically.
+	 *
+	 * @param string[] $roles Role keys.
+	 * @return string[]
+	 */
+	public static function sort_roles( $roles ) {
+		$priority = array_flip( self::ROLE_PRIORITY );
+
+		usort(
+			$roles,
+			static function ( $a, $b ) use ( $priority ) {
+				$pa = isset( $priority[ $a ] ) ? $priority[ $a ] : count( $priority );
+				$pb = isset( $priority[ $b ] ) ? $priority[ $b ] : count( $priority );
+
+				return array( $pa, $a ) <=> array( $pb, $b );
+			}
+		);
+
+		return $roles;
 	}
 
 	/**
@@ -254,10 +489,14 @@ class AMSwap_Order_Store {
 	 * Unknown slugs are inert: prepare_menu() only unsets rows that are
 	 * actually present in $menu.
 	 *
-	 * @param string|array $json Raw JSON string from the form, or a list.
+	 * Role profiles may hide protected slugs: their users never reach the
+	 * settings page, which is for agency accounts only.
+	 *
+	 * @param string|array $json    Raw JSON string from the form, or a list.
+	 * @param string       $profile Profile the list is for.
 	 * @return string[] Clean list of hidden menu slugs.
 	 */
-	public static function sanitize_hidden( $json ) {
+	public static function sanitize_hidden( $json, $profile = self::DEFAULT_PROFILE ) {
 		$entries = self::decode_list( $json, self::MAX_HIDDEN_ENTRIES );
 		$clean   = array();
 
@@ -272,7 +511,7 @@ class AMSwap_Order_Store {
 				continue;
 			}
 
-			if ( AMSwap_Menu_Reorder::is_protected( $entry ) ) {
+			if ( self::DEFAULT_PROFILE === $profile && AMSwap_Menu_Reorder::is_protected( $entry ) ) {
 				continue;
 			}
 

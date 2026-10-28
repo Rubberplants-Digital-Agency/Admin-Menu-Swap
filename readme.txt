@@ -4,7 +4,7 @@ Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Reorder the WordPress admin menu with drag and drop, hide items you never use, a
 
 == Description ==
 
-Admin Menu Swap adds a **Settings → Menu Order** page where the current top-level admin menu is shown as a drag and drop list. Drag items into any order, hide the ones you never use, drag separators around, remove them, or add new ones to group related items — then save. The result applies to all users (each user only sees the items their role allows, in your saved order).
+Admin Menu Swap adds a **Settings → Menu Order** page where the current top-level admin menu is shown as a drag and drop list. Drag items into any order, hide the ones you never use, drag separators around, remove them, or add new ones to group related items — then save. The result applies to all users (each user only sees the items their role allows, in your saved order), unless a role has a menu profile of its own.
 
 * Drag & drop reordering of all top-level menu items.
 * Show/hide toggle per item — hidden items keep their place in the list, so switching one back on returns it to where it was.
@@ -20,8 +20,9 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 * Pick a color for the menu separators, previewed live in the admin menu.
 * One click "Reset to default menu" (or "Reset to preset").
 * Presets: group rules that order a menu the plugin has never seen, including items of plugins activated later (filter `amswap_preset`, see `includes/class-amswap-preset.php`; an example ships in `presets/`).
+* Menu profiles per role: each role (Administrator, Editor, Shop Manager, ...) can hide its own items and follow the default order or have its own. Agency accounts (an email domain, default rubberplants.nl, or picked administrators) always get the default menu and are the only ones who can open the settings page.
 * Abilities for MCP clients and the Abilities REST API (WordPress 6.9+): `amswap/get-menu`, `amswap/update-menu-order`, `amswap/reset-menu-order`.
-* WP-CLI: `wp amswap list`, `wp amswap refresh`, `wp amswap reset`.
+* WP-CLI: `wp amswap list`, `wp amswap refresh`, `wp amswap reset`, `wp amswap agency`.
 * Can be built into a site plugin: require `admin-menu-swap.php` from the site plugin's own copy. When several copies are present, the newest one runs.
 * Without a preset, nothing changes until you save. The plugin does keep a small snapshot of the menu (option `amswap_menu_snapshot`) whenever an administrator opens wp-admin, so the abilities and WP-CLI know which items exist.
 * Uses the WordPress core `menu_order` filter — cooperates with, rather than overwrites, the admin menu.
@@ -37,6 +38,14 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 = What happens when I activate a new plugin after saving an order? =
 
 Its menu items (and its own separators) appear at the bottom of the menu until you visit Settings → Menu Order and save again, which bakes them into your order. While a preset applies (nothing saved), the new items are grouped by the preset straight away.
+
+= Who sees which menu? =
+
+Agency accounts get the default menu. Everybody else gets the profile of their highest role that has one (Administrator before Shop Manager before Editor and so on), or the default menu when none of their roles has a profile. A profile hides items on top of what the default menu hides. Pick a profile at the top of Settings → Menu Order to edit it; the page shows who it applies to and which items the role cannot open anyway.
+
+= What is an agency account? =
+
+An administrator whose email address is on an agency domain (default rubberplants.nl), or who is ticked under Agency accounts on the settings page (or added with `wp amswap agency add <user>`). Super admins on a multisite always are. As long as no administrator qualifies, every administrator counts as one, so nobody is ever locked out of the settings page. The page refuses a change that would take away your own access.
 
 = How do presets and the saved order work together? =
 
@@ -79,6 +88,13 @@ WordPress draws each menu separator as an invisible 2px line. Pick a color under
 Admin Menu Swap registers its `menu_order` filter at a very late priority, so its saved order wins. A plugin that force-disables `custom_menu_order` at an even later priority would disable sorting entirely; that is rare.
 
 == Changelog ==
+
+= 1.4.0 =
+* Added menu profiles per role: hidden items and, optionally, an order of their own. Presets can define them (`profiles`, with `hide_groups`, `show` and `hidden`); the Rubberplants preset hides the developer and WPMU DEV items from client administrators.
+* Added agency accounts (email domains, default rubberplants.nl, plus picked administrators). Only they reach the settings page and the abilities, and they always get the default menu.
+* The settings page has a profile picker, shows who a profile applies to and which items its role cannot open, and manages the agency accounts.
+* The abilities and `wp amswap list|reset` take a profile; added `wp amswap agency list|add|remove|domains`.
+* Role profiles may hide Settings: only agency accounts use this page.
 
 = 1.3.0 =
 * Added presets (filter `amswap_preset`): group rules with slug patterns, optional groups that need a plugin, and catch-alls for post types and unknown items. Without a saved order the preset is the menu; "Reset to preset" returns to it.

@@ -105,9 +105,11 @@ class AMSwap_Menu_Reorder {
 			return;
 		}
 
-		// The saved order, or else the preset resolved against this menu.
-		$saved           = AMSwap_Order_Store::effective( AMSwap_Menu_Snapshot::items_from_menu( $menu ) );
+		// The current user's profile: its saved order, or else the preset
+		// resolved against this menu.
+		$saved           = AMSwap_Order_Store::effective( AMSwap_Menu_Snapshot::items_from_menu( $menu ), AMSwap_Order_Store::profile_for_user() );
 		self::$effective = $saved;
+		$is_default      = AMSwap_Order_Store::DEFAULT_PROFILE === $saved['profile'];
 
 		if ( empty( $saved['order'] ) && empty( $saved['removed'] ) && empty( $saved['hidden'] ) ) {
 			return;
@@ -134,7 +136,9 @@ class AMSwap_Menu_Reorder {
 				// Separators go through the removed list instead, and the
 				// protected slugs are re-checked here in case the option was
 				// written by hand or by a future version with a shorter list.
-				if ( '' === $slug || self::is_separator( $item ) || self::is_protected( $slug ) ) {
+				// Role profiles may hide them: only agency accounts, who get
+				// the default profile, use the settings page.
+				if ( '' === $slug || self::is_separator( $item ) || ( $is_default && self::is_protected( $slug ) ) ) {
 					continue;
 				}
 
@@ -196,8 +200,10 @@ class AMSwap_Menu_Reorder {
 		}
 
 		return array(
-			'source' => AMSwap_Order_Store::has_saved() ? 'saved' : 'default',
-			'preset' => null,
+			'profile'               => AMSwap_Order_Store::DEFAULT_PROFILE,
+			'follows_default_order' => true,
+			'source'                => AMSwap_Order_Store::has_saved() ? 'saved' : 'default',
+			'preset'                => null,
 		) + AMSwap_Order_Store::get();
 	}
 
@@ -260,6 +266,10 @@ class AMSwap_Menu_Reorder {
 	 * still present, flagged rather than dropped, so they can be switched
 	 * back on — the one respect in which this list is not WYSIWYG.
 	 *
+	 * A role profile is built from the menu snapshot instead, in that
+	 * profile's order, with the items the role cannot open flagged.
+	 *
+	 * @param string $profile Profile key, default the default profile.
 	 * @return array[] {
 	 *     @type string $slug         Menu slug ($item[2]).
 	 *     @type string $title        Clean text title (count bubbles stripped).
@@ -268,15 +278,20 @@ class AMSwap_Menu_Reorder {
 	 *     @type bool   $is_custom    Whether it is one of our custom separators.
 	 *     @type bool   $is_hidden    Whether the user switched the item off.
 	 *     @type bool   $is_protected Whether the item refuses to be hidden.
+	 *     @type bool   $no_access    Whether the profile's role cannot open the item.
 	 * }
 	 */
-	public static function get_display_items() {
+	public static function get_display_items( $profile = AMSwap_Order_Store::DEFAULT_PROFILE ) {
 		global $menu;
 
 		$items = array();
 
 		if ( ! is_array( $menu ) ) {
 			return $items;
+		}
+
+		if ( AMSwap_Order_Store::DEFAULT_PROFILE !== $profile ) {
+			return self::get_profile_display_items( $profile );
 		}
 
 		$saved  = self::current_settings();
@@ -290,6 +305,37 @@ class AMSwap_Menu_Reorder {
 				'is_custom'    => self::is_custom_separator( $slug ),
 				'is_hidden'    => ! $is_separator && in_array( $slug, $hidden, true ),
 				'is_protected' => ! $is_separator && self::is_protected( $slug ),
+				'no_access'    => false,
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Display model of a role profile, see get_display_items().
+	 *
+	 * @param string $profile Role.
+	 * @return array[]
+	 */
+	protected static function get_profile_display_items( $profile ) {
+		global $menu;
+
+		$snapshot = AMSwap_Menu_Snapshot::get();
+		$source   = null === $snapshot ? AMSwap_Menu_Snapshot::items_from_menu( $menu ) : $snapshot['items'];
+		$settings = AMSwap_Order_Store::effective( $source, $profile );
+		$role     = get_role( $profile );
+		$items    = array();
+
+		foreach ( AMSwap_Menu_Model::apply_to_items( $source, $settings, false ) as $item ) {
+			$is_separator = $item['is_separator'];
+			$capability   = isset( $item['capability'] ) ? (string) $item['capability'] : '';
+
+			$items[] = $item + array(
+				'is_custom'    => self::is_custom_separator( $item['slug'] ),
+				'is_hidden'    => ! empty( $item['hidden'] ),
+				'is_protected' => false,
+				'no_access'    => ! $is_separator && '' !== $capability && ( ! $role || ! $role->has_cap( $capability ) ),
 			);
 		}
 

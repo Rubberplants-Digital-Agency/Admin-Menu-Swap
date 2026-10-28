@@ -181,3 +181,58 @@
 	border-top: 1px solid #dcdcde;
 	max-width: 480px;
 }
+
+/* Profile picker and what a profile applies to. */
+.amswap-profile-picker {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	max-width: 480px;
+	margin: 16px 0 4px;
+}
+
+.amswap-profile-picker label {
+	font-weight: 600;
+}
+
+.amswap-profile-picker select {
+	flex: 1 1 240px;
+	max-width: 100%;
+}
+
+.amswap-wrap .amswap-applies {
+	max-width: 480px;
+	margin-bottom: 12px;
+}
+
+.amswap-follow {
+	max-width: 480px;
+}
+
+/* Rows the profile's role cannot open: shown, but quiet. */
+.amswap-no-access .amswap-icon,
+.amswap-no-access .amswap-title {
+	opacity: 0.6;
+}
+
+.amswap-badge.amswap-badge-on {
+	display: inline-block;
+}
+
+/* Agency accounts. */
+#amswap-agency-form {
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid #dcdcde;
+	max-width: 480px;
+}
+
+#amswap-agency-form h2 {
+	margin-top: 0;
+}
+
+.amswap-agency-user {
+	display: block;
+	margin: 4px 0;
+}

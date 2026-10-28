@@ -107,4 +107,13 @@ return array(
 	),
 	'hidden'          => array( 'edit-comments.php' ),
 	'separator_color' => '#ffffff',
+	'profiles'        => array(
+		// Client administrators (administrators who are not agency accounts):
+		// no developer tools and no WPMU DEV, apart from what they work with.
+		'administrator' => array(
+			'label'       => __( 'Client administrator', 'admin-menu-swap' ),
+			'hide_groups' => array( 'developer', 'wpmudev' ),
+			'show'        => array( 'forminator', 'hustle*', 'themes.php', 'users.php' ),
+		),
+	),
 );
