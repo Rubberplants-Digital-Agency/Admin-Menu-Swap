@@ -434,7 +434,7 @@
 
 /* A chevron that turns when the section opens. */
 .amswap-agency summary::after {
-	content: "347";
+	content: "\f347";
 	font: normal 16px/1 dashicons;
 	color: var( --amswap-text-muted );
 }

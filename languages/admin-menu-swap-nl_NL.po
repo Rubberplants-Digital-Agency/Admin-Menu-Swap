@@ -10,7 +10,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Domain: admin-menu-swap\n"
 
-#: admin/class-amswap-admin.php:53 admin/class-amswap-admin.php:175
+#: admin/class-amswap-admin.php:53 admin/class-amswap-admin.php:179
 #: includes/class-amswap-abilities.php:40
 msgid "Admin Menu Swap"
 msgstr "Admin Menu Swap"
@@ -50,16 +50,16 @@ msgstr ""
 " verborgen items, eigen scheidingslijnen en scheidingslijnkleur worden "
 "verwijderd."
 
-#: admin/class-amswap-admin.php:123 admin/class-amswap-admin.php:463
+#: admin/class-amswap-admin.php:123 admin/class-amswap-admin.php:492
 msgid "Hide from menu"
 msgstr "Verbergen in menu"
 
-#: admin/class-amswap-admin.php:124 admin/class-amswap-admin.php:462
+#: admin/class-amswap-admin.php:124 admin/class-amswap-admin.php:491
 msgid "Show in menu"
 msgstr "Tonen in menu"
 
 #. 1: number of menu items, 2: number of hidden items.
-#: admin/class-amswap-admin.php:126 admin/class-amswap-admin.php:205
+#: admin/class-amswap-admin.php:126 admin/class-amswap-admin.php:209
 #, php-format
 msgid "%1$d items, %2$d hidden"
 msgstr "%1$d items, %2$d verborgen"
@@ -78,7 +78,7 @@ msgstr "Je hebt niet-opgeslagen wijzigingen in het menu."
 msgid "Sorry, you are not allowed to access this page."
 msgstr "Sorry, je hebt geen toegang tot deze pagina."
 
-#: admin/class-amswap-admin.php:176
+#: admin/class-amswap-admin.php:180
 msgid ""
 "Arrange the admin menu, hide what nobody uses and give each role its own "
 "view."
@@ -86,31 +86,31 @@ msgstr ""
 "Orden het beheermenu, verberg wat niemand gebruikt en geef elke rol een "
 "eigen weergave."
 
-#: admin/class-amswap-admin.php:179
+#: admin/class-amswap-admin.php:183
 msgid "Menu profiles"
 msgstr "Menuprofielen"
 
-#: admin/class-amswap-admin.php:184
+#: admin/class-amswap-admin.php:188
 msgid "Default menu"
 msgstr "Standaardmenu"
 
-#: admin/class-amswap-admin.php:201
+#: admin/class-amswap-admin.php:205
 msgid "Admin menu"
 msgstr "Beheermenu"
 
-#: admin/class-amswap-admin.php:230
+#: admin/class-amswap-admin.php:234
 msgid "Add separator"
 msgstr "Scheidingslijn toevoegen"
 
-#: admin/class-amswap-admin.php:232
+#: admin/class-amswap-admin.php:236
 msgid "Drag by the handle, or focus it and use the arrow keys."
 msgstr "Sleep aan de greep, of geef die focus en gebruik de pijltjestoetsen."
 
-#: admin/class-amswap-admin.php:238
+#: admin/class-amswap-admin.php:242
 msgid "Who sees this menu"
 msgstr "Wie ziet dit menu"
 
-#: admin/class-amswap-admin.php:243
+#: admin/class-amswap-admin.php:247
 msgid ""
 "Agency accounts, and every role without a profile of its own. Users who "
 "cannot open the dashboard, such as shop customers, are left out."
@@ -118,7 +118,7 @@ msgstr ""
 "Bureau-accounts, en elke rol zonder eigen profiel. Gebruikers die het "
 "dashboard niet kunnen openen, zoals klanten van de winkel, vallen erbuiten."
 
-#: admin/class-amswap-admin.php:244
+#: admin/class-amswap-admin.php:248
 msgid ""
 "Users with this role who are not agency accounts. The profile hides items on"
 " top of what the default menu hides."
@@ -127,38 +127,55 @@ msgstr ""
 "items bovenop wat het standaardmenu al verbergt."
 
 #. %d: number of users not listed.
-#: admin/class-amswap-admin.php:258
+#: admin/class-amswap-admin.php:264
 #, php-format
 msgid "and %d more"
 msgstr "en nog %d"
 
-#: admin/class-amswap-admin.php:264
+#. %d: number of users not listed, counted among some of the site's users
+#. only.
+#: admin/class-amswap-admin.php:267
+#, php-format
+msgid "and at least %d more"
+msgstr "en nog minstens %d"
+
+#: admin/class-amswap-admin.php:269
+msgid "and possibly more"
+msgstr "en mogelijk meer"
+
+#: admin/class-amswap-admin.php:276
+msgid "Not counted: this site has too many users to check them all."
+msgstr ""
+"Niet geteld: deze site heeft te veel gebruikers om ze allemaal te "
+"controleren."
+
+#: admin/class-amswap-admin.php:278
 msgid "Nobody gets this menu right now."
 msgstr "Niemand krijgt dit menu op dit moment."
 
-#: admin/class-amswap-admin.php:274
+#: admin/class-amswap-admin.php:288
 msgid "Follow the default order"
 msgstr "Standaardvolgorde aanhouden"
 
-#: admin/class-amswap-admin.php:281
+#: admin/class-amswap-admin.php:295
 msgid "Separator color"
 msgstr "Kleur scheidingslijnen"
 
-#: admin/class-amswap-admin.php:283
+#: admin/class-amswap-admin.php:297
 msgid "Shared by every profile. Clear it to keep the color scheme's own."
 msgstr ""
 "Gedeeld door alle profielen. Maak leeg om de kleur van het kleurenschema te "
 "houden."
 
-#: admin/class-amswap-admin.php:289
+#: admin/class-amswap-admin.php:303
 msgid "Save changes"
 msgstr "Wijzigingen opslaan"
 
-#: admin/class-amswap-admin.php:290
+#: admin/class-amswap-admin.php:304
 msgid "Unsaved changes"
 msgstr "Niet-opgeslagen wijzigingen"
 
-#: admin/class-amswap-admin.php:307
+#: admin/class-amswap-admin.php:321
 msgid ""
 "Hiding takes an item out of the menu; its page stays reachable by URL. Roles"
 " and capabilities decide who may open it."
@@ -166,11 +183,11 @@ msgstr ""
 "Verbergen haalt een item uit het menu; de pagina blijft bereikbaar via de "
 "URL. Rollen en rechten bepalen wie hem mag openen."
 
-#: admin/class-amswap-admin.php:339
+#: admin/class-amswap-admin.php:365
 msgid "Agency accounts"
 msgstr "Bureau-accounts"
 
-#: admin/class-amswap-admin.php:341
+#: admin/class-amswap-admin.php:367
 msgid ""
 "They always get the default menu and are the only ones who can open this "
 "page."
@@ -178,19 +195,31 @@ msgstr ""
 "Zij krijgen altijd het standaardmenu en zijn de enigen die deze pagina "
 "kunnen openen."
 
-#: admin/class-amswap-admin.php:344
+#: admin/class-amswap-admin.php:370
 msgid "Email domains"
 msgstr "E-maildomeinen"
 
-#: admin/class-amswap-admin.php:349
+#: admin/class-amswap-admin.php:375
 msgid "Administrators"
 msgstr "Beheerders"
 
-#: admin/class-amswap-admin.php:366
+#: admin/class-amswap-admin.php:392
 msgid "by domain"
 msgstr "via domein"
 
-#: admin/class-amswap-admin.php:374
+#: admin/class-amswap-admin.php:395
+msgid ""
+"Only administrators can be agency accounts, so this pick does not count "
+"until they are one again."
+msgstr ""
+"Alleen beheerders kunnen bureau-accounts zijn, dus deze keuze telt pas weer "
+"mee als deze gebruiker weer beheerder is."
+
+#: admin/class-amswap-admin.php:395
+msgid "not an administrator"
+msgstr "geen beheerder"
+
+#: admin/class-amswap-admin.php:403
 msgid ""
 "No administrator qualifies yet, so every administrator counts as an agency "
 "account for now."
@@ -198,72 +227,76 @@ msgstr ""
 "Nog geen enkele beheerder komt in aanmerking, dus voorlopig telt elke "
 "beheerder als bureau-account."
 
-#: admin/class-amswap-admin.php:379
+#: admin/class-amswap-admin.php:408
 msgid "Save agency accounts"
 msgstr "Bureau-accounts opslaan"
 
-#: admin/class-amswap-admin.php:407
+#: admin/class-amswap-admin.php:436
 msgid "Move separator"
 msgstr "Scheidingslijn verplaatsen"
 
 #. %s: menu item title.
-#: admin/class-amswap-admin.php:409
+#: admin/class-amswap-admin.php:438
 #, php-format
 msgid "Move %s"
 msgstr "%s verplaatsen"
 
-#: admin/class-amswap-admin.php:421
+#: admin/class-amswap-admin.php:450
 msgid "Separator"
 msgstr "Scheidingslijn"
 
-#: admin/class-amswap-admin.php:422 admin/class-amswap-admin.php:422
+#: admin/class-amswap-admin.php:451 admin/class-amswap-admin.php:451
 msgid "Remove separator"
 msgstr "Scheidingslijn verwijderen"
 
-#: admin/class-amswap-admin.php:431
+#: admin/class-amswap-admin.php:460
 msgid "Hidden"
 msgstr "Verborgen"
 
-#: admin/class-amswap-admin.php:433
+#: admin/class-amswap-admin.php:462
 msgid "This role cannot open this page, so it never sees the item anyway."
 msgstr ""
 "Deze rol kan deze pagina niet openen en ziet het item dus sowieso nooit."
 
-#: admin/class-amswap-admin.php:433
+#: admin/class-amswap-admin.php:462
 msgid "No access"
 msgstr "Geen toegang"
 
-#: admin/class-amswap-admin.php:452
+#: admin/class-amswap-admin.php:481
 msgid "Settings cannot be hidden: this plugin's own page lives under it."
 msgstr ""
 "Instellingen kan niet verborgen worden: de pagina van deze plugin staat "
 "daaronder."
 
-#: admin/class-amswap-admin.php:521 admin/class-amswap-admin.php:530
+#: admin/class-amswap-admin.php:548 admin/class-amswap-admin.php:583
+msgid "That profile no longer exists, so nothing was changed."
+msgstr "Dat profiel bestaat niet meer, dus er is niets gewijzigd."
+
+#: admin/class-amswap-admin.php:557 admin/class-amswap-admin.php:566
 msgid "Nothing to save: the submitted menu order was empty."
 msgstr "Niets om op te slaan: de verstuurde menuvolgorde was leeg."
 
-#: admin/class-amswap-admin.php:526
+#: admin/class-amswap-admin.php:562
 msgid "Profile saved."
 msgstr "Profiel opgeslagen."
 
-#: admin/class-amswap-admin.php:535
+#: admin/class-amswap-admin.php:571
 msgid "Menu saved."
 msgstr "Menu opgeslagen."
 
-#: admin/class-amswap-admin.php:549
+#: admin/class-amswap-admin.php:589
 msgid "Profile reset."
 msgstr "Profiel gereset."
 
-#: admin/class-amswap-admin.php:553
+#: admin/class-amswap-admin.php:593
 msgid "Menu reset to the WordPress default."
 msgstr "Menu gereset naar de WordPress-standaard."
 
-#: admin/class-amswap-admin.php:553
+#: admin/class-amswap-admin.php:593
 msgid "Menu reset to the preset."
 msgstr "Menu gereset naar de voorinstelling."
 
-#: admin/class-amswap-admin.php:581
+#: admin/class-amswap-admin.php:621
 msgid ""
 "Not saved: you would no longer be an agency account. Tick yourself or keep "
 "your email domain in the list."
@@ -271,31 +304,39 @@ msgstr ""
 "Niet opgeslagen: je zou dan geen bureau-account meer zijn. Vink jezelf aan "
 "of houd je e-maildomein in de lijst."
 
-#: admin/class-amswap-admin.php:586
+#: admin/class-amswap-admin.php:626
 msgid "Agency accounts saved."
 msgstr "Bureau-accounts opgeslagen."
 
-#: admin/class-amswap-admin.php:647
+#: admin/class-amswap-admin.php:645
+msgid ""
+"Unknown profile: this is the default menu, and saving here changes the "
+"default menu."
+msgstr ""
+"Onbekend profiel: dit is het standaardmenu, en opslaan wijzigt hier het "
+"standaardmenu."
+
+#: admin/class-amswap-admin.php:734
 msgid "saved"
 msgstr "opgeslagen"
 
-#: admin/class-amswap-admin.php:649
+#: admin/class-amswap-admin.php:736
 msgid "preset"
 msgstr "voorinstelling"
 
-#: admin/class-amswap-admin.php:651
+#: admin/class-amswap-admin.php:738
 msgid "uses the default menu"
 msgstr "gebruikt het standaardmenu"
 
-#: admin/class-amswap-admin.php:653
+#: admin/class-amswap-admin.php:740
 msgid "WordPress default"
 msgstr "WordPress-standaard"
 
-#: admin/class-amswap-admin.php:667
+#: admin/class-amswap-admin.php:754
 msgid "Saved on this page."
 msgstr "Opgeslagen op deze pagina."
 
-#: admin/class-amswap-admin.php:670
+#: admin/class-amswap-admin.php:757
 msgid ""
 "From the site's preset, which also places plugins activated later. Saving "
 "makes it your own."
@@ -303,35 +344,35 @@ msgstr ""
 "Komt uit de voorinstelling van de site, die ook later geactiveerde plugins "
 "een plek geeft. Na opslaan is het je eigen menu."
 
-#: admin/class-amswap-admin.php:671
+#: admin/class-amswap-admin.php:758
 msgid "From the site's preset. Saving makes it your own."
 msgstr ""
 "Komt uit de voorinstelling van de site. Na opslaan is het je eigen menu."
 
-#: admin/class-amswap-admin.php:673
+#: admin/class-amswap-admin.php:760
 msgid ""
 "No profile yet: this role gets the default menu. Saving creates its profile."
 msgstr ""
 "Nog geen profiel: deze rol krijgt het standaardmenu. Opslaan maakt het "
 "profiel aan."
 
-#: admin/class-amswap-admin.php:675
+#: admin/class-amswap-admin.php:762
 msgid "The WordPress menu, unchanged. Saving stores your order."
 msgstr "Het WordPress-menu, ongewijzigd. Opslaan bewaart je volgorde."
 
-#: admin/class-amswap-admin.php:688 admin/class-amswap-admin.php:693
+#: admin/class-amswap-admin.php:775 admin/class-amswap-admin.php:780
 msgid "Reset to preset"
 msgstr "Resetten naar voorinstelling"
 
-#: admin/class-amswap-admin.php:688
+#: admin/class-amswap-admin.php:775
 msgid "Reset to default menu"
 msgstr "Resetten naar standaardmenu"
 
-#: admin/class-amswap-admin.php:693
+#: admin/class-amswap-admin.php:780
 msgid "Remove this profile"
 msgstr "Dit profiel verwijderen"
 
-#: admin/class-amswap-admin.php:703
+#: admin/class-amswap-admin.php:790
 msgid "Sorry, you are not allowed to do that."
 msgstr "Sorry, je hebt geen toestemming om dat te doen."
 
@@ -362,9 +403,13 @@ msgid ""
 "(source: saved, preset, default, or inherit for a role that uses the default"
 " menu), its effective settings (order, hidden, removed separators, separator"
 " color, follows_default_order), the preset groups with the slugs no preset "
-"pattern names, every profile with the users it applies to, the agency "
-"accounts (they always get the default profile) and the age of the menu "
-"snapshot. Use it before amswap/update-menu-order to get the exact slugs."
+"pattern names, every profile with the number of users it applies to (count; "
+"capped is true when count is a lower bound because the site has more users "
+"than were counted), the agency domains and the number of agency accounts "
+"(account_count; they always get the default profile) and the age of the menu"
+" snapshot. User logins (users per profile, at most 50, and the agency "
+"accounts) are left out unless include_users is true. Use it before "
+"amswap/update-menu-order to get the exact slugs."
 msgstr ""
 "Geeft het bovenste niveau van het WordPress-beheermenu van één profiel "
 "(standaard: \"default\") in weergavevolgorde: van elk item de slug, de "
@@ -374,45 +419,69 @@ msgstr ""
 "effectieve instellingen (order, hidden, verwijderde scheidingslijnen, "
 "scheidingslijnkleur, follows_default_order), de groepen van de "
 "voorinstelling met de slugs die geen patroon van de voorinstelling noemt, "
-"elk profiel met de gebruikers voor wie het geldt, de bureau-accounts (die "
-"altijd het profiel default krijgen) en de leeftijd van de momentopname van "
-"het menu. Gebruik het vóór amswap/update-menu-order om de exacte slugs te "
-"krijgen."
+"elk profiel met het aantal gebruikers voor wie het geldt (count; capped is "
+"true als count een ondergrens is omdat de site meer gebruikers heeft dan er "
+"geteld zijn), de bureaudomeinen en het aantal bureau-accounts "
+"(account_count; die krijgen altijd het profiel default) en de leeftijd van "
+"de momentopname van het menu. Gebruikersnamen (users per profiel, hoogstens "
+"50, en de bureau-accounts) worden weggelaten tenzij include_users true is. "
+"Gebruik het vóór amswap/update-menu-order om de exacte slugs te krijgen."
 
-#: includes/class-amswap-abilities.php:109
+#: includes/class-amswap-abilities.php:74
+msgid ""
+"Also return the user logins of each profile and of the agency accounts. "
+"These are personal data that the menu does not need, so leave this out "
+"unless asked who a profile applies to."
+msgstr ""
+"Geef ook de gebruikersnamen van elk profiel en van de bureau-accounts. Dat "
+"zijn persoonsgegevens die het menu niet nodig heeft, dus laat dit weg tenzij"
+" gevraagd wordt voor wie een profiel geldt."
+
+#: includes/class-amswap-abilities.php:134
 msgid "Update admin menu order"
 msgstr "Volgorde beheermenu bijwerken"
 
-#: includes/class-amswap-abilities.php:110
+#: includes/class-amswap-abilities.php:135
 msgid ""
 "Saves the top-level WordPress admin menu of one profile, as the settings "
-"page does. profile is \"default\" (agency accounts and roles without a "
-"profile) or a role. order lists every slug in the wanted order; put "
-"\"separator-amswap\" entries where a separator belongs (they are "
-"renumbered); separators of core and plugins that are not in order are "
-"removed. For a role profile, leave order out (or set follow_default_order) "
-"to follow the default order and only set hidden. hidden replaces the hidden "
-"items; leave it out to keep the current ones. separator_color (#rrggbb, \"\""
-" for the default) is shared and only accepted for the default profile. Slugs"
-" must exist in the menu (see amswap/get-menu); unknown slugs are refused. "
-"Afterwards the preset no longer applies to that profile until amswap/reset-"
-"menu-order."
+"page does. It overwrites the order the profile had saved, and its hidden "
+"items when hidden is given; separators of core and plugins that are left out"
+" of order are removed. There is no undo other than sending the previous "
+"order and hidden items again, so get them first with amswap/get-menu (or use"
+" amswap/reset-menu-order if its source was not saved). profile is "
+"\"default\" (agency accounts and roles without a profile) or a role. order "
+"lists every slug in the wanted order; put \"separator-amswap\" entries where"
+" a separator belongs (they are renumbered). For a role profile, leave order "
+"out (or set follow_default_order) to follow the default order and only set "
+"hidden. hidden replaces the hidden items; leave it out to keep the current "
+"ones. separator_color (#rrggbb, \"\" for the default) is shared and only "
+"accepted for the default profile. Slugs must exist in the menu (see "
+"amswap/get-menu); unknown slugs are refused, except those already in the "
+"profile's order or hidden items (such as the menu of a deactivated plugin), "
+"which are kept. Afterwards the preset no longer applies to that profile "
+"until amswap/reset-menu-order."
 msgstr ""
 "Slaat het bovenste niveau van het WordPress-beheermenu van één profiel op, "
-"zoals de instellingenpagina doet. profile is \"default\" (bureau-accounts en"
-" rollen zonder profiel) of een rol. order noemt elke slug in de gewenste "
-"volgorde; zet \"separator-amswap\"-items waar een scheidingslijn hoort (ze "
-"worden hernummerd); scheidingslijnen van core en plugins die niet in order "
-"staan, worden verwijderd. Laat order bij een rolprofiel weg (of zet "
-"follow_default_order) om de standaardvolgorde aan te houden en alleen hidden"
-" in te stellen. hidden vervangt de verborgen items; laat het weg om de "
-"huidige te houden. separator_color (#rrggbb, \"\" voor de standaard) is "
-"gedeeld en wordt alleen voor het profiel default geaccepteerd. Slugs moeten "
-"in het menu bestaan (zie amswap/get-menu); onbekende slugs worden geweigerd."
-" Daarna geldt de voorinstelling niet meer voor dat profiel, tot "
-"amswap/reset-menu-order."
+"zoals de instellingenpagina doet. Het overschrijft de volgorde die het "
+"profiel had opgeslagen, en de verborgen items als hidden is opgegeven; "
+"scheidingslijnen van core en plugins die niet in order staan, worden "
+"verwijderd. Dit kan alleen ongedaan worden gemaakt door de vorige volgorde "
+"en verborgen items opnieuw te sturen, dus haal ze eerst op met amswap/get-"
+"menu (of gebruik amswap/reset-menu-order als de bron niet saved was). "
+"profile is \"default\" (bureau-accounts en rollen zonder profiel) of een "
+"rol. order noemt elke slug in de gewenste volgorde; zet \"separator-"
+"amswap\"-items waar een scheidingslijn hoort (ze worden hernummerd). Laat "
+"order bij een rolprofiel weg (of zet follow_default_order) om de "
+"standaardvolgorde aan te houden en alleen hidden in te stellen. hidden "
+"vervangt de verborgen items; laat het weg om de huidige te houden. "
+"separator_color (#rrggbb, \"\" voor de standaard) is gedeeld en wordt alleen"
+" voor het profiel default geaccepteerd. Slugs moeten in het menu bestaan "
+"(zie amswap/get-menu); onbekende slugs worden geweigerd, behalve slugs die "
+"al in de volgorde of de verborgen items van het profiel staan (zoals het "
+"menu van een gedeactiveerde plugin), die blijven staan. Daarna geldt de "
+"voorinstelling niet meer voor dat profiel, tot amswap/reset-menu-order."
 
-#: includes/class-amswap-abilities.php:117
+#: includes/class-amswap-abilities.php:142
 msgid ""
 "Every top-level slug in the wanted order, with \"separator-amswap\" entries "
 "for separators. Required for the default profile."
@@ -420,18 +489,18 @@ msgstr ""
 "Elke slug van het bovenste niveau in de gewenste volgorde, met \"separator-"
 "amswap\"-items voor scheidingslijnen. Verplicht voor het profiel default."
 
-#: includes/class-amswap-abilities.php:121
+#: includes/class-amswap-abilities.php:146
 msgid "Role profiles only: follow the default order and ignore order."
 msgstr "Alleen rolprofielen: houd de standaardvolgorde aan en negeer order."
 
-#: includes/class-amswap-abilities.php:124
+#: includes/class-amswap-abilities.php:149
 msgid ""
 "Slugs to hide from the menu. Leave out to keep the current hidden items."
 msgstr ""
 "Slugs die in het menu verborgen worden. Laat weg om de huidige verborgen "
 "items te houden."
 
-#: includes/class-amswap-abilities.php:128
+#: includes/class-amswap-abilities.php:153
 msgid ""
 "Default profile only: separator color as #rrggbb, or \"\" for the admin "
 "color scheme default. Leave out to keep the current color."
@@ -439,11 +508,11 @@ msgstr ""
 "Alleen profiel default: scheidingslijnkleur als #rrggbb, of \"\" voor de "
 "standaard van het kleurenschema. Laat weg om de huidige kleur te houden."
 
-#: includes/class-amswap-abilities.php:160
+#: includes/class-amswap-abilities.php:186
 msgid "Reset admin menu order"
 msgstr "Volgorde beheermenu resetten"
 
-#: includes/class-amswap-abilities.php:161
+#: includes/class-amswap-abilities.php:187
 msgid ""
 "Deletes the saved settings of one profile (default: \"default\"). The "
 "default profile then follows the site's preset again, or the WordPress "
@@ -456,26 +525,26 @@ msgstr ""
 "het profiel voor die rol uit de voorinstelling, of het standaardmenu. Geeft "
 "terug wat nu geldt."
 
-#: includes/class-amswap-abilities.php:239
+#: includes/class-amswap-abilities.php:288
 msgid "order is required for the default profile."
 msgstr "order is verplicht voor het profiel default."
 
-#: includes/class-amswap-abilities.php:243
+#: includes/class-amswap-abilities.php:292
 msgid ""
 "separator_color is shared by all profiles; set it on the default profile."
 msgstr ""
 "separator_color is gedeeld door alle profielen; stel het in op het profiel "
 "default."
 
-#: includes/class-amswap-abilities.php:261
+#: includes/class-amswap-abilities.php:310
 msgid "The order is empty after validation."
 msgstr "De volgorde is leeg na validatie."
 
-#: includes/class-amswap-abilities.php:269
+#: includes/class-amswap-abilities.php:318
 msgid "separator_color must be a hex color such as #eb6728, or \"\"."
 msgstr "separator_color moet een hexkleur zijn, zoals #eb6728, of \"\"."
 
-#: includes/class-amswap-abilities.php:277
+#: includes/class-amswap-abilities.php:326
 msgid ""
 "There is no menu snapshot, so the slugs could not be checked and core "
 "separators were left as they were."
@@ -484,7 +553,7 @@ msgstr ""
 " worden en de scheidingslijnen van core zijn gelaten zoals ze waren."
 
 #. %s: comma-separated menu slugs.
-#: includes/class-amswap-abilities.php:307
+#: includes/class-amswap-abilities.php:359
 #, php-format
 msgid ""
 "These slugs are not in the admin menu: %s. Use the slugs amswap/get-menu "
@@ -493,7 +562,7 @@ msgstr ""
 "Deze slugs staan niet in het beheermenu: %s. Gebruik de slugs die "
 "amswap/get-menu teruggeeft."
 
-#: includes/class-amswap-abilities.php:314
+#: includes/class-amswap-abilities.php:366
 msgid ""
 "The items in missing were not in the order; they appear below it, in their "
 "default order."
@@ -502,7 +571,7 @@ msgstr ""
 "hun standaardvolgorde."
 
 #. %s: profile key.
-#: includes/class-amswap-abilities.php:379
+#: includes/class-amswap-abilities.php:431
 #, php-format
 msgid "Unknown profile \"%s\". Use \"default\" or a role; amswap/get-menu lists them."
 msgstr ""
@@ -516,63 +585,69 @@ msgstr ""
 msgid "Profile: %1$s (%2$s). Snapshot from %3$s ago."
 msgstr "Profiel: %1$s (%2$s). Momentopname van %3$s geleden."
 
+#. 1: comma-separated user logins. 2: number of users counted, a lower bound.
+#: includes/class-amswap-cli.php:111
+#, php-format
+msgid "%1$s (%2$d+ users)"
+msgstr "%1$s (%2$d+ gebruikers)"
+
 #. 1: comma-separated user logins. 2: number of users not listed.
-#: includes/class-amswap-cli.php:110
+#: includes/class-amswap-cli.php:114
 #, php-format
 msgid "%1$s and %2$d more"
 msgstr "%1$s en nog %2$d"
 
 #. %s: comma-separated user logins.
-#: includes/class-amswap-cli.php:116
+#: includes/class-amswap-cli.php:120
 #, php-format
 msgid "Applies to: %s"
 msgstr "Geldt voor: %s"
 
 #. %s: comma-separated menu slugs.
-#: includes/class-amswap-cli.php:126
+#: includes/class-amswap-cli.php:130
 #, php-format
 msgid "Not named by the preset: %s"
 msgstr "Niet genoemd door de voorinstelling: %s"
 
 #. %d: number of menu rows.
-#: includes/class-amswap-cli.php:150
+#: includes/class-amswap-cli.php:154
 #, php-format
 msgid "Stored a snapshot of %d admin menu rows."
 msgstr "Momentopname van %d rijen van het beheermenu opgeslagen."
 
-#: includes/class-amswap-cli.php:179
+#: includes/class-amswap-cli.php:183
 msgid "Nothing to reset: this profile has no saved settings."
 msgstr "Niets om te resetten: dit profiel heeft geen opgeslagen instellingen."
 
-#: includes/class-amswap-cli.php:190
+#: includes/class-amswap-cli.php:194
 msgid "Deleted the profile. The preset's profile for this role applies again."
 msgstr ""
 "Profiel verwijderd. Het profiel voor deze rol uit de voorinstelling geldt "
 "weer."
 
-#: includes/class-amswap-cli.php:191
+#: includes/class-amswap-cli.php:195
 msgid "Deleted the profile. This role gets the default menu."
 msgstr "Profiel verwijderd. Deze rol krijgt het standaardmenu."
 
-#: includes/class-amswap-cli.php:198
+#: includes/class-amswap-cli.php:202
 msgid ""
 "Deleted the saved order. The admin menu is back to the WordPress default."
 msgstr ""
 "Opgeslagen volgorde verwijderd. Het beheermenu is terug naar de WordPress-"
 "standaard."
 
-#: includes/class-amswap-cli.php:199
+#: includes/class-amswap-cli.php:203
 msgid "Deleted the saved order. The admin menu follows the preset again."
 msgstr ""
 "Opgeslagen volgorde verwijderd. Het beheermenu volgt weer de voorinstelling."
 
 #. %s: comma-separated domains.
-#: includes/class-amswap-cli.php:249
+#: includes/class-amswap-cli.php:255
 #, php-format
 msgid "Agency domains: %s"
 msgstr "Bureaudomeinen: %s"
 
-#: includes/class-amswap-cli.php:255
+#: includes/class-amswap-cli.php:261
 msgid ""
 "No administrator qualifies, so every administrator counts as an agency "
 "account."
@@ -580,37 +655,51 @@ msgstr ""
 "Geen enkele beheerder komt in aanmerking, dus elke beheerder telt als "
 "bureau-account."
 
-#: includes/class-amswap-cli.php:262
+#: includes/class-amswap-cli.php:268
 msgid "Saved the agency domains."
 msgstr "Bureaudomeinen opgeslagen."
 
-#: includes/class-amswap-cli.php:267
+#: includes/class-amswap-cli.php:273
 msgid "Name at least one user."
 msgstr "Noem ten minste één gebruiker."
 
 #. %s: user ID, login or email.
-#: includes/class-amswap-cli.php:277
+#: includes/class-amswap-cli.php:298
 #, php-format
 msgid "No such user: %s"
 msgstr "Gebruiker bestaat niet: %s"
 
 #. %s: user login.
-#: includes/class-amswap-cli.php:283
+#: includes/class-amswap-cli.php:304
 #, php-format
 msgid "%s is no administrator."
 msgstr "%s is geen beheerder."
 
-#: includes/class-amswap-cli.php:292
-msgid "Saved the agency accounts."
-msgstr "Bureau-accounts opgeslagen."
+#. 1: user login. 2: user ID.
+#: includes/class-amswap-cli.php:313
+#, php-format
+msgid "%1$s (ID %2$d)"
+msgstr "%1$s (ID %2$d)"
+
+#. %s: comma-separated user logins with their IDs.
+#: includes/class-amswap-cli.php:320
+#, php-format
+msgid "Saved the agency accounts. Added: %s"
+msgstr "Bureau-accounts opgeslagen. Toegevoegd: %s"
+
+#. %s: comma-separated user logins with their IDs.
+#: includes/class-amswap-cli.php:323
+#, php-format
+msgid "Saved the agency accounts. Removed: %s"
+msgstr "Bureau-accounts opgeslagen. Verwijderd: %s"
 
 #. %s: profile key.
-#: includes/class-amswap-cli.php:306
+#: includes/class-amswap-cli.php:340
 #, php-format
 msgid "Unknown profile \"%s\". Use \"default\" or a role."
 msgstr "Onbekend profiel \"%s\". Gebruik \"default\" of een rol."
 
-#: includes/class-amswap-menu-model.php:90
+#: includes/class-amswap-menu-model.php:91
 msgid ""
 "No menu snapshot yet: open any wp-admin page as an administrator once, or "
 "run: wp amswap list --refresh --exec='define( \"WP_ADMIN\", true );' "
@@ -620,11 +709,11 @@ msgstr ""
 "pagina als beheerder, of voer uit: wp amswap list --refresh --exec='define( "
 "\"WP_ADMIN\", true );' --user=<administrator>"
 
-#: includes/class-amswap-menu-model.php:129
+#: includes/class-amswap-menu-model.php:139
 msgid "Default (agency accounts and roles without a profile)"
 msgstr "Standaard (bureau-accounts en rollen zonder profiel)"
 
-#: includes/class-amswap-menu-snapshot.php:169
+#: includes/class-amswap-menu-snapshot.php:190
 msgid ""
 "Run: wp amswap list --refresh --exec='define( \"WP_ADMIN\", true );' "
 "--user=<administrator>"
@@ -633,13 +722,13 @@ msgstr ""
 "--user=<administrator>"
 
 #. %s: the command to run.
-#: includes/class-amswap-menu-snapshot.php:173
+#: includes/class-amswap-menu-snapshot.php:194
 #, php-format
 msgid "The admin menu only exists in wp-admin. %s"
 msgstr "Het beheermenu bestaat alleen in wp-admin. %s"
 
 #. %s: the command to run.
-#: includes/class-amswap-menu-snapshot.php:178
+#: includes/class-amswap-menu-snapshot.php:199
 #, php-format
 msgid ""
 "The admin menu was already built in this request; WP-CLI's --context=admin "
@@ -649,47 +738,47 @@ msgstr ""
 "bouwt het onvolledig op. %s"
 
 #. %s: the command to run.
-#: includes/class-amswap-menu-snapshot.php:183
+#: includes/class-amswap-menu-snapshot.php:204
 #, php-format
 msgid "Only an administrator sees the whole menu. %s"
 msgstr "Alleen een beheerder ziet het hele menu. %s"
 
-#: includes/class-amswap-menu-snapshot.php:193
+#: includes/class-amswap-menu-snapshot.php:214
 msgid "The admin menu was built, but no snapshot was stored."
 msgstr "Het beheermenu is opgebouwd, maar er is geen momentopname opgeslagen."
 
-#: includes/class-amswap-preset.php:203
+#: includes/class-amswap-preset.php:229
 msgid "Other"
 msgstr "Overig"
 
-#: presets/rubberplants.php:25
+#: presets/rubberplants.php:23
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: presets/rubberplants.php:32
+#: presets/rubberplants.php:30
 msgid "Content"
 msgstr "Inhoud"
 
-#: presets/rubberplants.php:54
+#: presets/rubberplants.php:52
 msgid "Shop"
 msgstr "Winkel"
 
-#: presets/rubberplants.php:74
+#: presets/rubberplants.php:72
 msgid "WPMU DEV"
 msgstr "WPMU DEV"
 
-#: presets/rubberplants.php:91
+#: presets/rubberplants.php:89
 msgid "Developer"
 msgstr "Ontwikkelaar"
 
-#: presets/rubberplants.php:124
+#: presets/rubberplants.php:122
 msgid "Client administrator"
 msgstr "Klantbeheerder"
 
 #. Plugin URI of the plugin
 #: admin-menu-swap.php
-msgid "https://rubberplants.nl/"
-msgstr "https://rubberplants.nl/"
+msgid "https://github.com/Rubberplants-Digital-Agency/Admin-Menu-Swap"
+msgstr "https://github.com/Rubberplants-Digital-Agency/Admin-Menu-Swap"
 
 #. Description of the plugin
 #: admin-menu-swap.php
@@ -705,3 +794,8 @@ msgstr ""
 #: admin-menu-swap.php
 msgid "Rubberplants"
 msgstr "Rubberplants"
+
+#. Author URI of the plugin
+#: admin-menu-swap.php
+msgid "https://rubberplants.nl/"
+msgstr "https://rubberplants.nl/"

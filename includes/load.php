@@ -29,4 +29,39 @@ function amswap() {
 	return AMSwap_Plugin::instance();
 }
 
+/**
+ * Note on this site which copies built into other plugins are loaded.
+ *
+ * On a network, uninstalling the standalone plugin cleans every site, and
+ * it can only see the copies loaded on the main site; the note tells it
+ * which sites still use the options (see uninstall.php). Every registered
+ * copy counts, not just the newest. Sites without such a copy never read
+ * the option, and it is only written when it changes.
+ */
+function amswap_note_embedded_copies() {
+	$embedded = array();
+
+	foreach ( array_keys( $GLOBALS['amswap_copies'] ) as $file ) {
+		$basename = plugin_basename( $file );
+
+		if ( 'admin-menu-swap/admin-menu-swap.php' !== $basename ) {
+			$embedded[] = $basename;
+		}
+	}
+
+	if ( ! $embedded ) {
+		return;
+	}
+
+	sort( $embedded );
+
+	if ( get_option( 'amswap_embedded_copy' ) !== $embedded ) {
+		update_option( 'amswap_embedded_copy', $embedded, false );
+	}
+}
+
 amswap();
+
+if ( is_admin() ) {
+	amswap_note_embedded_copies();
+}

@@ -107,6 +107,11 @@ class AMSwap_Menu_Snapshot {
 	/**
 	 * Store a list of items, unless it is unchanged and still fresh.
 	 *
+	 * Titles are left out of the comparison: they are translated, so two
+	 * administrators with different languages would otherwise rewrite the
+	 * option on every admin page they load. A title-only change is stored
+	 * with the next refresh.
+	 *
 	 * @param array[] $items Items from items_from_menu().
 	 * @param bool    $force Store even an unchanged, fresh list.
 	 * @return bool Whether the option was written.
@@ -114,7 +119,7 @@ class AMSwap_Menu_Snapshot {
 	public static function store( $items, $force = false ) {
 		$stored = self::get();
 
-		if ( ! $force && null !== $stored && $stored['items'] === $items && time() - $stored['captured_at'] < self::REFRESH_INTERVAL ) {
+		if ( ! $force && null !== $stored && self::signature( $stored['items'] ) === self::signature( $items ) && time() - $stored['captured_at'] < self::REFRESH_INTERVAL ) {
 			return false;
 		}
 
@@ -126,6 +131,22 @@ class AMSwap_Menu_Snapshot {
 			),
 			false
 		);
+	}
+
+	/**
+	 * Items without their titles, to tell whether the menu itself changed.
+	 *
+	 * @param array[] $items Items from items_from_menu().
+	 * @return array[]
+	 */
+	protected static function signature( $items ) {
+		foreach ( $items as $key => $item ) {
+			if ( is_array( $item ) ) {
+				unset( $items[ $key ]['title'] );
+			}
+		}
+
+		return $items;
 	}
 
 	/**

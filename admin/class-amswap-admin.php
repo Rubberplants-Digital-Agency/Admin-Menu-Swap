@@ -148,6 +148,10 @@ class AMSwap_Admin {
 		$current    = reset( $current );
 		$has_preset = null !== AMSwap_Preset::get();
 
+		// On a site with more dashboard users than profiles() looks at, every
+		// count is a lower bound: the tabs get a "+" and the list says so.
+		$capped = ! empty( $current['capped'] );
+
 		if ( $is_default ) {
 			$saved = AMSwap_Menu_Reorder::current_settings();
 		} else {
@@ -180,7 +184,7 @@ class AMSwap_Admin {
 				<?php foreach ( $profiles as $option ) : ?>
 					<?php
 					$url   = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
-					$url   = AMSwap_Order_Store::DEFAULT_PROFILE === $option['key'] ? $url : add_query_arg( 'profile', $option['key'], $url );
+					$url   = AMSwap_Order_Store::DEFAULT_PROFILE === $option['key'] ? $url : add_query_arg( 'profile', rawurlencode( $option['key'] ), $url );
 					$label = AMSwap_Order_Store::DEFAULT_PROFILE === $option['key'] ? __( 'Default menu', 'admin-menu-swap' ) : $option['label'];
 					?>
 					<a href="<?php echo esc_url( $url ); ?>"
@@ -189,7 +193,7 @@ class AMSwap_Admin {
 						title="<?php echo esc_attr( $this->source_label( $option['source'] ) ); ?>">
 						<span class="amswap-profile-name"><?php echo esc_html( $label ); ?></span>
 						<?php if ( $option['count'] > 0 ) : ?>
-							<span class="amswap-profile-count"><?php echo esc_html( (string) $option['count'] ); ?></span>
+							<span class="amswap-profile-count"><?php echo esc_html( $option['count'] . ( empty( $option['capped'] ) ? '' : '+' ) ); ?></span>
 						<?php endif; ?>
 					</a>
 				<?php endforeach; ?>
@@ -251,15 +255,25 @@ class AMSwap_Admin {
 								<?php foreach ( $current['users'] as $login ) : ?>
 									<li><?php echo esc_html( $login ); ?></li>
 								<?php endforeach; ?>
-								<?php if ( $current['count'] > count( $current['users'] ) ) : ?>
+								<?php $more = $current['count'] - count( $current['users'] ); ?>
+								<?php if ( $more > 0 || $capped ) : ?>
 									<li class="amswap-users-more">
 										<?php
-										/* translators: %d: number of users not listed. */
-										echo esc_html( sprintf( __( 'and %d more', 'admin-menu-swap' ), $current['count'] - count( $current['users'] ) ) );
+										if ( ! $capped ) {
+											/* translators: %d: number of users not listed. */
+											echo esc_html( sprintf( __( 'and %d more', 'admin-menu-swap' ), $more ) );
+										} elseif ( $more > 0 ) {
+											/* translators: %d: number of users not listed, counted among some of the site's users only. */
+											echo esc_html( sprintf( __( 'and at least %d more', 'admin-menu-swap' ), $more ) );
+										} else {
+											esc_html_e( 'and possibly more', 'admin-menu-swap' );
+										}
 										?>
 									</li>
 								<?php endif; ?>
 							</ul>
+						<?php elseif ( $capped ) : ?>
+							<p class="amswap-muted"><?php esc_html_e( 'Not counted: this site has too many users to check them all.', 'admin-menu-swap' ); ?></p>
 						<?php else : ?>
 							<p class="amswap-muted"><?php esc_html_e( 'Nobody gets this menu right now.', 'admin-menu-swap' ); ?></p>
 						<?php endif; ?>
@@ -334,6 +348,20 @@ class AMSwap_Admin {
 	 */
 	protected function render_agency_form() {
 		$settings = AMSwap_Agency::get();
+		$accounts = AMSwap_Agency::administrators();
+		$listed   = array_map( 'intval', wp_list_pluck( $accounts, 'ID' ) );
+
+		// Picked users beyond the listed administrators, or who are no longer
+		// administrators, are listed too, so saving the form keeps them. On a
+		// multisite only members of this site: get_userdata() sees the whole
+		// network, and its other users are none of this page's business.
+		foreach ( $settings['users'] as $user_id ) {
+			$user = in_array( $user_id, $listed, true ) || ! self::is_site_user( $user_id ) ? false : get_userdata( $user_id );
+
+			if ( $user instanceof WP_User ) {
+				$accounts[] = $user;
+			}
+		}
 		?>
 		<details class="amswap-agency">
 			<summary><h2><?php esc_html_e( 'Agency accounts', 'admin-menu-swap' ); ?></h2></summary>
@@ -347,7 +375,7 @@ class AMSwap_Admin {
 
 				<fieldset>
 					<legend><?php esc_html_e( 'Administrators', 'admin-menu-swap' ); ?></legend>
-					<?php foreach ( AMSwap_Agency::administrators() as $user ) : ?>
+					<?php foreach ( $accounts as $user ) : ?>
 						<?php
 						$by_domain = AMSwap_Agency::qualifies(
 							$user,
@@ -364,6 +392,9 @@ class AMSwap_Admin {
 								<span class="amswap-muted"><?php echo esc_html( $user->user_email ); ?></span>
 								<?php if ( $by_domain ) : ?>
 									<span class="amswap-badge"><?php esc_html_e( 'by domain', 'admin-menu-swap' ); ?></span>
+								<?php endif; ?>
+								<?php if ( ! user_can( $user, 'manage_options' ) ) : ?>
+									<span class="amswap-badge" title="<?php esc_attr_e( 'Only administrators can be agency accounts, so this pick does not count until they are one again.', 'admin-menu-swap' ); ?>"><?php esc_html_e( 'not an administrator', 'admin-menu-swap' ); ?></span>
 								<?php endif; ?>
 							</span>
 						</label>
@@ -512,6 +543,13 @@ class AMSwap_Admin {
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		$profile = $this->posted_profile();
+
+		// Never fall back to the default menu here: that would overwrite it
+		// with a role's order.
+		if ( null === $profile ) {
+			$this->redirect_with_notice( __( 'That profile no longer exists, so nothing was changed.', 'admin-menu-swap' ), 'error' );
+		}
+
 		$order   = AMSwap_Order_Store::sanitize_order( $order_json );
 		$hidden  = AMSwap_Order_Store::sanitize_hidden( $hidden_json, $profile );
 		$removed = AMSwap_Order_Store::sanitize_removed( $removed_json );
@@ -543,6 +581,10 @@ class AMSwap_Admin {
 
 		$profile = $this->posted_profile();
 
+		if ( null === $profile ) {
+			$this->redirect_with_notice( __( 'That profile no longer exists, so nothing was changed.', 'admin-menu-swap' ), 'error' );
+		}
+
 		AMSwap_Order_Store::reset_profile( $profile );
 
 		if ( AMSwap_Order_Store::DEFAULT_PROFILE !== $profile ) {
@@ -569,7 +611,7 @@ class AMSwap_Admin {
 
 		$settings = array(
 			'domains' => AMSwap_Agency::sanitize_domains( $domains ),
-			'users'   => $users,
+			'users'   => array_values( array_filter( $users, array( __CLASS__, 'is_site_user' ) ) ),
 		);
 
 		$me = wp_get_current_user();
@@ -587,11 +629,23 @@ class AMSwap_Admin {
 	}
 
 	/**
-	 * Print the flash notice left by a save/reset redirect.
+	 * Print the flash notice left by a save/reset redirect, and on the
+	 * settings page a warning when the URL names a profile that does not exist.
 	 */
 	public function render_notices() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
+		}
+
+		// The page falls back to the default menu; say so, so a save there is
+		// not taken for the role's.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( false !== $this->hook_suffix && $screen && $this->hook_suffix === $screen->id && $this->unknown_profile_requested() ) {
+			printf(
+				'<div class="notice notice-error"><p>%s</p></div>',
+				esc_html__( 'Unknown profile: this is the default menu, and saving here changes the default menu.', 'admin-menu-swap' )
+			);
 		}
 
 		$notice = get_transient( $this->notice_key() );
@@ -612,27 +666,62 @@ class AMSwap_Admin {
 	}
 
 	/**
-	 * The profile asked for in the URL, the default when missing or unknown.
+	 * The profile asked for in the URL, the default when missing or unknown
+	 * (see unknown_profile_requested()).
 	 *
 	 * @return string
 	 */
 	protected function requested_profile() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only screen choice, changes no state.
-		$profile = isset( $_GET['profile'] ) ? sanitize_key( wp_unslash( $_GET['profile'] ) ) : '';
+		$profile = $this->known_profile( $this->raw_requested_profile() );
 
-		return AMSwap_Order_Store::is_profile( $profile ) ? $profile : AMSwap_Order_Store::DEFAULT_PROFILE;
+		return null === $profile ? AMSwap_Order_Store::DEFAULT_PROFILE : $profile;
 	}
 
 	/**
-	 * The profile a form was posted for, the default when missing or unknown.
+	 * Whether the URL asks for a profile that does not exist, so the page
+	 * shows the default menu instead and must say so.
 	 *
-	 * @return string
+	 * @return bool
+	 */
+	protected function unknown_profile_requested() {
+		$raw = $this->raw_requested_profile();
+
+		return null !== $raw && '' !== $raw && null === $this->known_profile( $raw );
+	}
+
+	/**
+	 * The profile parameter of the URL as sent, or null without one.
+	 *
+	 * @return mixed
+	 */
+	protected function raw_requested_profile() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- read-only screen choice; allowlisted by known_profile(), as sanitize_key() would lowercase a role key such as Shop_Support.
+		return isset( $_GET['profile'] ) ? wp_unslash( $_GET['profile'] ) : null;
+	}
+
+	/**
+	 * The profile a form was posted for: the default when none was posted,
+	 * null when the posted one does not exist (any more).
+	 *
+	 * @return string|null
 	 */
 	protected function posted_profile() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in verify() by every caller.
-		$profile = isset( $_POST['amswap_profile'] ) ? sanitize_key( wp_unslash( $_POST['amswap_profile'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- verified in verify() by every caller; allowlisted by known_profile(), as sanitize_key() would lowercase a role key such as Shop_Support.
+		$raw = isset( $_POST['amswap_profile'] ) ? wp_unslash( $_POST['amswap_profile'] ) : AMSwap_Order_Store::DEFAULT_PROFILE;
 
-		return AMSwap_Order_Store::is_profile( $profile ) ? $profile : AMSwap_Order_Store::DEFAULT_PROFILE;
+		return $this->known_profile( $raw );
+	}
+
+	/**
+	 * A profile key from a request, accepted only when it is exactly the key
+	 * of a known profile: 'default' or an existing role. Role keys may hold
+	 * capitals, so the value is matched as sent rather than sanitized.
+	 *
+	 * @param mixed $raw Unslashed request value.
+	 * @return string|null The profile key, or null when it is not one.
+	 */
+	protected function known_profile( $raw ) {
+		return is_string( $raw ) && AMSwap_Order_Store::is_profile( $raw ) ? $raw : null;
 	}
 
 	/**
@@ -694,6 +783,18 @@ class AMSwap_Admin {
 	}
 
 	/**
+	 * Whether a user belongs to this site: always on a single site, and on a
+	 * multisite only as a member, so the agency form never names or stores
+	 * users of other sites in the network.
+	 *
+	 * @param int $user_id User ID.
+	 * @return bool
+	 */
+	public static function is_site_user( $user_id ) {
+		return ! is_multisite() || is_user_member_of_blog( (int) $user_id );
+	}
+
+	/**
 	 * Capability, agency + nonce gate for the admin-post handlers.
 	 *
 	 * @param string $action Nonce action name.
@@ -725,7 +826,7 @@ class AMSwap_Admin {
 
 		$url = admin_url( 'options-general.php?page=' . self::PAGE_SLUG );
 		if ( AMSwap_Order_Store::DEFAULT_PROFILE !== $profile ) {
-			$url = add_query_arg( 'profile', $profile, $url );
+			$url = add_query_arg( 'profile', rawurlencode( $profile ), $url );
 		}
 
 		wp_safe_redirect( $url );

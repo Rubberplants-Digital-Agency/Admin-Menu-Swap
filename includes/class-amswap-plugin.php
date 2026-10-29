@@ -47,6 +47,9 @@ class AMSwap_Plugin {
 	protected function boot() {
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 
+		// Users change outside wp-admin too, so this is wired everywhere.
+		AMSwap_Agency::register();
+
 		/**
 		 * Whether to register the amswap/* abilities (WordPress 6.9+), which
 		 * MCP clients and the Abilities REST API reach.
@@ -89,8 +92,19 @@ class AMSwap_Plugin {
 	/**
 	 * Load translations. Hooked on init: since WP 6.7 translating
 	 * earlier triggers a doing-it-wrong notice.
+	 *
+	 * A copy built into a must-use plugin lives outside the plugins folder,
+	 * which load_plugin_textdomain() always looks in.
 	 */
 	public function load_textdomain() {
+		$dir    = trailingslashit( wp_normalize_path( AMSWAP_PLUGIN_DIR ) );
+		$mu_dir = defined( 'WPMU_PLUGIN_DIR' ) ? trailingslashit( wp_normalize_path( WPMU_PLUGIN_DIR ) ) : '';
+
+		if ( '' !== $mu_dir && 0 === strpos( $dir, $mu_dir ) ) {
+			load_muplugin_textdomain( 'admin-menu-swap', substr( $dir, strlen( $mu_dir ) ) . 'languages' );
+			return;
+		}
+
 		load_plugin_textdomain( 'admin-menu-swap', false, dirname( AMSWAP_PLUGIN_BASENAME ) . '/languages' );
 	}
 

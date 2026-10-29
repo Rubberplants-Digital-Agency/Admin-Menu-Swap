@@ -62,12 +62,17 @@ class AMSwap_Abilities {
 			'amswap/get-menu',
 			array(
 				'label'               => __( 'Get admin menu', 'admin-menu-swap' ),
-				'description'         => __( 'Returns the top-level WordPress admin menu of one profile (default: "default") in display order: each item\'s slug, title, whether it is hidden and its preset group. Also returns where the profile\'s settings come from (source: saved, preset, default, or inherit for a role that uses the default menu), its effective settings (order, hidden, removed separators, separator color, follows_default_order), the preset groups with the slugs no preset pattern names, every profile with the users it applies to, the agency accounts (they always get the default profile) and the age of the menu snapshot. Use it before amswap/update-menu-order to get the exact slugs.', 'admin-menu-swap' ),
+				'description'         => __( 'Returns the top-level WordPress admin menu of one profile (default: "default") in display order: each item\'s slug, title, whether it is hidden and its preset group. Also returns where the profile\'s settings come from (source: saved, preset, default, or inherit for a role that uses the default menu), its effective settings (order, hidden, removed separators, separator color, follows_default_order), the preset groups with the slugs no preset pattern names, every profile with the number of users it applies to (count; capped is true when count is a lower bound because the site has more users than were counted), the agency domains and the number of agency accounts (account_count; they always get the default profile) and the age of the menu snapshot. User logins (users per profile, at most 50, and the agency accounts) are left out unless include_users is true. Use it before amswap/update-menu-order to get the exact slugs.', 'admin-menu-swap' ),
 				'category'            => self::CATEGORY,
 				'input_schema'        => array(
 					'type'                 => 'object',
 					'properties'           => array(
-						'profile' => $profile,
+						'profile'       => $profile,
+						'include_users' => array(
+							'type'        => 'boolean',
+							'default'     => false,
+							'description' => __( 'Also return the user logins of each profile and of the agency accounts. These are personal data that the menu does not need, so leave this out unless asked who a profile applies to.', 'admin-menu-swap' ),
+						),
 					),
 					'additionalProperties' => false,
 					'default'              => array(),
@@ -84,8 +89,28 @@ class AMSwap_Abilities {
 						'settings' => array( 'type' => 'object' ),
 						'items'    => array( 'type' => 'array' ),
 						'preset'   => array( 'type' => array( 'object', 'null' ) ),
-						'profiles' => array( 'type' => 'array' ),
-						'agency'   => array( 'type' => 'object' ),
+						'profiles' => array(
+							'type'  => 'array',
+							'items' => array(
+								'type'       => 'object',
+								'properties' => array(
+									'key'    => array( 'type' => 'string' ),
+									'label'  => array( 'type' => 'string' ),
+									'source' => array( 'type' => 'string' ),
+									'users'  => $slug_list,
+									'count'  => array( 'type' => 'integer' ),
+									'capped' => array( 'type' => 'boolean' ),
+								),
+							),
+						),
+						'agency'   => array(
+							'type'       => 'object',
+							'properties' => array(
+								'domains'       => $slug_list,
+								'accounts'      => $slug_list,
+								'account_count' => array( 'type' => 'integer' ),
+							),
+						),
 						'notice'   => array( 'type' => 'string' ),
 					),
 				),
@@ -107,7 +132,7 @@ class AMSwap_Abilities {
 			'amswap/update-menu-order',
 			array(
 				'label'               => __( 'Update admin menu order', 'admin-menu-swap' ),
-				'description'         => __( 'Saves the top-level WordPress admin menu of one profile, as the settings page does. profile is "default" (agency accounts and roles without a profile) or a role. order lists every slug in the wanted order; put "separator-amswap" entries where a separator belongs (they are renumbered); separators of core and plugins that are not in order are removed. For a role profile, leave order out (or set follow_default_order) to follow the default order and only set hidden. hidden replaces the hidden items; leave it out to keep the current ones. separator_color (#rrggbb, "" for the default) is shared and only accepted for the default profile. Slugs must exist in the menu (see amswap/get-menu); unknown slugs are refused. Afterwards the preset no longer applies to that profile until amswap/reset-menu-order.', 'admin-menu-swap' ),
+				'description'         => __( 'Saves the top-level WordPress admin menu of one profile, as the settings page does. It overwrites the order the profile had saved, and its hidden items when hidden is given; separators of core and plugins that are left out of order are removed. There is no undo other than sending the previous order and hidden items again, so get them first with amswap/get-menu (or use amswap/reset-menu-order if its source was not saved). profile is "default" (agency accounts and roles without a profile) or a role. order lists every slug in the wanted order; put "separator-amswap" entries where a separator belongs (they are renumbered). For a role profile, leave order out (or set follow_default_order) to follow the default order and only set hidden. hidden replaces the hidden items; leave it out to keep the current ones. separator_color (#rrggbb, "" for the default) is shared and only accepted for the default profile. Slugs must exist in the menu (see amswap/get-menu); unknown slugs are refused, except those already in the profile\'s order or hidden items (such as the menu of a deactivated plugin), which are kept. Afterwards the preset no longer applies to that profile until amswap/reset-menu-order.', 'admin-menu-swap' ),
 				'category'            => self::CATEGORY,
 				'input_schema'        => array(
 					'type'                 => 'object',
@@ -143,9 +168,10 @@ class AMSwap_Abilities {
 				'execute_callback'    => array( $this, 'update_menu_order' ),
 				'permission_callback' => array( $this, 'can_manage' ),
 				'meta'                => array(
+					// Destructive: it overwrites saved settings. The REST run endpoint then takes DELETE.
 					'annotations'  => array(
 						'readonly'    => false,
-						'destructive' => false,
+						'destructive' => true,
 						'idempotent'  => true,
 					),
 					'show_in_rest' => true,
@@ -216,7 +242,22 @@ class AMSwap_Abilities {
 			return $profile;
 		}
 
-		return AMSwap_Menu_Model::describe( $profile );
+		$model = AMSwap_Menu_Model::describe( $profile );
+
+		$model['agency']['account_count'] = count( $model['agency']['accounts'] );
+
+		// Logins are the client's personal data and go to the AI provider, so only on request.
+		if ( isset( $input['include_users'] ) && rest_sanitize_boolean( $input['include_users'] ) ) {
+			return $model;
+		}
+
+		foreach ( array_keys( $model['profiles'] ) as $i ) {
+			unset( $model['profiles'][ $i ]['users'] );
+		}
+
+		unset( $model['agency']['accounts'] );
+
+		return $model;
 	}
 
 	/**
@@ -232,8 +273,16 @@ class AMSwap_Abilities {
 			return $profile;
 		}
 
+		// Over REST this ability runs as DELETE, so its input arrives as query
+		// parameters: a list can be a comma-separated string, a flag "false".
+		foreach ( array( 'order', 'hidden' ) as $list ) {
+			if ( isset( $input[ $list ] ) && ! is_array( $input[ $list ] ) ) {
+				$input[ $list ] = wp_parse_list( (string) $input[ $list ] );
+			}
+		}
+
 		$is_default = AMSwap_Order_Store::DEFAULT_PROFILE === $profile;
-		$follow     = ! $is_default && ( ! empty( $input['follow_default_order'] ) || ! isset( $input['order'] ) );
+		$follow     = ! $is_default && ( ( isset( $input['follow_default_order'] ) && rest_sanitize_boolean( $input['follow_default_order'] ) ) || ! isset( $input['order'] ) );
 
 		if ( $is_default && empty( $input['order'] ) ) {
 			return new WP_Error( 'amswap_empty_order', __( 'order is required for the default profile.', 'admin-menu-swap' ) );
@@ -292,9 +341,12 @@ class AMSwap_Abilities {
 				}
 			}
 
+			// Slugs the profile already has are kept: a deactivated plugin's
+			// item leaves the menu but stays in the saved order or hidden list.
+			$kept    = array_merge( $current['order'], $current['hidden'] );
 			$unknown = array();
 			foreach ( array_merge( $order, $hidden ) as $slug ) {
-				if ( ! AMSwap_Menu_Reorder::is_custom_separator( $slug ) && ! in_array( $slug, $known, true ) ) {
+				if ( ! AMSwap_Menu_Reorder::is_custom_separator( $slug ) && ! in_array( $slug, $known, true ) && ! in_array( $slug, $kept, true ) ) {
 					$unknown[] = $slug;
 				}
 			}

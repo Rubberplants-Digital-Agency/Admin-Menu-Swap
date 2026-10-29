@@ -105,7 +105,11 @@ class AMSwap_CLI {
 			if ( ! empty( $current['users'] ) ) {
 				$logins = implode( ', ', $current['users'] );
 
-				if ( $current['count'] > count( $current['users'] ) ) {
+				if ( ! empty( $current['capped'] ) ) {
+					// Not every user was looked at, so the count is a lower bound.
+					/* translators: 1: comma-separated user logins. 2: number of users counted, a lower bound. */
+					$logins = sprintf( __( '%1$s (%2$d+ users)', 'admin-menu-swap' ), $logins, $current['count'] );
+				} elseif ( $current['count'] > count( $current['users'] ) ) {
 					/* translators: 1: comma-separated user logins. 2: number of users not listed. */
 					$logins = sprintf( __( '%1$s and %2$d more', 'admin-menu-swap' ), $logins, $current['count'] - count( $current['users'] ) );
 				}
@@ -216,13 +220,15 @@ class AMSwap_CLI {
 	 * ---
 	 *
 	 * [<value>...]
-	 * : add/remove: user IDs, logins or emails. domains: the email domains (replaces the list; none clears it).
+	 * : add/remove: user IDs, logins or emails (a value of digits only is tried as an ID first, then as a login). domains: the email domains (replaces the list; none clears it).
 	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp amswap agency list
-	 *     wp amswap agency add jdoe
-	 *     wp amswap agency domains rubberplants.nl
+	 *     wp amswap agency add 12
+	 *     wp amswap agency add jdoe jdoe@example.com
+	 *     wp amswap agency remove jdoe
+	 *     wp amswap agency domains example.com
 	 *
 	 * @param string[] $args       Action and values.
 	 * @param array    $assoc_args Options (unused).
@@ -267,10 +273,25 @@ class AMSwap_CLI {
 			WP_CLI::error( __( 'Name at least one user.', 'admin-menu-swap' ) );
 		}
 
-		$users = $settings['users'];
+		$users    = $settings['users'];
+		$resolved = array();
 
 		foreach ( $args as $value ) {
-			$user = is_numeric( $value ) ? get_userdata( (int) $value ) : ( get_user_by( 'login', $value ) ? get_user_by( 'login', $value ) : get_user_by( 'email', $value ) );
+			$value = (string) $value;
+			$user  = false;
+
+			// Digits only is an ID, unless no user has it: logins can be all digits too.
+			if ( preg_match( '/^\d+$/D', $value ) ) {
+				$user = get_userdata( (int) $value );
+			}
+
+			if ( ! $user ) {
+				$user = get_user_by( 'login', $value );
+			}
+
+			if ( ! $user ) {
+				$user = get_user_by( 'email', $value );
+			}
 
 			if ( ! $user ) {
 				/* translators: %s: user ID, login or email. */
@@ -286,10 +307,23 @@ class AMSwap_CLI {
 			} else {
 				$users = array_diff( $users, array( (int) $user->ID ) );
 			}
+
+			// Named in the output, so a value that matched someone else shows.
+			/* translators: 1: user login. 2: user ID. */
+			$resolved[] = sprintf( __( '%1$s (ID %2$d)', 'admin-menu-swap' ), $user->user_login, $user->ID );
 		}
 
 		AMSwap_Agency::save( $settings['domains'], $users );
-		WP_CLI::success( __( 'Saved the agency accounts.', 'admin-menu-swap' ) );
+
+		if ( 'add' === $action ) {
+			/* translators: %s: comma-separated user logins with their IDs. */
+			$message = __( 'Saved the agency accounts. Added: %s', 'admin-menu-swap' );
+		} else {
+			/* translators: %s: comma-separated user logins with their IDs. */
+			$message = __( 'Saved the agency accounts. Removed: %s', 'admin-menu-swap' );
+		}
+
+		WP_CLI::success( sprintf( $message, implode( ', ', array_unique( $resolved ) ) ) );
 	}
 
 	/**

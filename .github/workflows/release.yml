@@ -1,6 +1,8 @@
-# Publishes a release for every tag v<version>: checks that the tag, the plugin header and
-# readme.txt agree, builds admin-menu-swap.zip (folder admin-menu-swap/, which WordPress
-# installs) and attaches it. Sites find it through the plugin's Update URI.
+# Publishes a release for every tag v<version> on main: checks that the tag is a plain
+# version, that the tag, the plugin header and readme.txt agree and that no text file holds
+# a stray control character, then builds admin-menu-swap.zip (folder admin-menu-swap/, which
+# WordPress installs) and info.json (requirements, tested version and changelog, which the
+# update check reads) and attaches both. Sites find them through the plugin's Update URI.
 name: Release
 
 on:
@@ -8,14 +10,32 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # Sites install whatever is released, so only a version tag on a commit
+      # that is on main may become one.
+      - name: Check the tag
+        run: |
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+(\.[0-9]+){1,3}$ ]]; then
+            echo "Tag $GITHUB_REF_NAME is not a version like v1.6.1."
+            exit 1
+          fi
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Tag $GITHUB_REF_NAME does not point at a commit on main."
+            exit 1
+          fi
 
       - name: Check the version
         run: |
@@ -28,8 +48,40 @@ jobs:
             exit 1
           fi
 
+      # Tab, newline and carriage return only: an earlier version shipped a
+      # literal form feed in admin.css.
+      - name: Check for control characters
+        run: |
+          git ls-files -z -- '*.php' '*.css' '*.js' '*.txt' '*.yml' '*.po' '*.pot' \
+            | xargs -0 -r perl -ne 'if ( /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/ ) { print "Control character in $ARGV, line $.\n"; $bad = 1 } close ARGV if eof; END { exit( $bad ? 1 : 0 ) }'
+
       - name: Build the zip
         run: git archive --format=zip --prefix=admin-menu-swap/ -o admin-menu-swap.zip HEAD
+
+      # The update check offers no update without this file, rather than guess.
+      - name: Build info.json
+        run: |
+          requires="$(sed -n 's/^ \* Requires at least: *\([^[:space:]]*\).*/\1/p' admin-menu-swap.php)"
+          requires_php="$(sed -n 's/^ \* Requires PHP: *\([^[:space:]]*\).*/\1/p' admin-menu-swap.php)"
+          tested="$(sed -n 's/^Tested up to: *\([^[:space:]]*\).*/\1/p' readme.txt)"
+          for value in "$requires" "$requires_php" "$tested"; do
+            if ! [[ "$value" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+              echo "Requires at least ($requires), Requires PHP ($requires_php) and Tested up to ($tested) must each be a version like 6.0."
+              exit 1
+            fi
+          done
+          awk '/^== Changelog ==[[:space:]]*$/ { found = 1; next } found && /^== / { exit } found' readme.txt > changelog.txt
+          if ! grep -q '[^[:space:]]' changelog.txt; then
+            echo "readme.txt has no == Changelog == section."
+            exit 1
+          fi
+          jq -n \
+            --arg version "${GITHUB_REF_NAME#v}" \
+            --arg requires "$requires" \
+            --arg requires_php "$requires_php" \
+            --arg tested "$tested" \
+            --rawfile changelog changelog.txt \
+            '{ version: $version, requires: $requires, requires_php: $requires_php, tested: $tested, changelog: $changelog }' > info.json
 
       - name: Release notes from readme.txt
         run: |
@@ -39,4 +91,4 @@ jobs:
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" admin-menu-swap.zip --title "Admin Menu Swap ${GITHUB_REF_NAME#v}" --notes-file notes.md
+        run: gh release create "$GITHUB_REF_NAME" admin-menu-swap.zip info.json --title "Admin Menu Swap ${GITHUB_REF_NAME#v}" --notes-file notes.md

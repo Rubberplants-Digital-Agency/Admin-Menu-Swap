@@ -27,7 +27,8 @@ class AMSwap_Menu_Model {
 	 *     @type array      $settings Effective order, hidden, removed, separator_color, follows_default_order.
 	 *     @type array[]    $items    The menu in display order: slug, title, type, hidden, group.
 	 *     @type array|null $preset   Preset groups and unmatched slugs, or null without a preset.
-	 *     @type array[]    $profiles Every profile: key, label, source, users (logins it applies to).
+	 *     @type array[]    $profiles Every profile: key, label, source, users (logins it applies to),
+	 *                                count and capped (see profiles()).
 	 *     @type array      $agency   Agency domains and the logins of the agency accounts.
 	 *     @type string     $notice   Advice when the snapshot is missing, else ''.
 	 * }
@@ -96,26 +97,35 @@ class AMSwap_Menu_Model {
 	 * Every profile with where its settings come from and who it applies to.
 	 *
 	 * Only users who can open the dashboard count (see dashboard_caps()), so
-	 * a shop's customers do not swell the lists.
+	 * a shop's customers do not swell the lists. At most 500 of them are
+	 * looked at, as each one needs its profile worked out; on a larger site
+	 * every profile is marked capped and its count is a lower bound.
 	 *
 	 * @return array[] { key, label, source ('saved', 'preset' or 'inherit'; the default profile:
-	 *                 'saved', 'preset' or 'default'), users (logins, at most 50), count (all of them) }.
+	 *                 'saved', 'preset' or 'default'), users (logins, at most 50), count (all of
+	 *                 them among the users looked at), capped (bool: true when the site has more
+	 *                 dashboard users than were looked at, so count may be too low) }.
 	 */
 	public static function profiles() {
 		$sources = AMSwap_Order_Store::role_sources();
 		$preset  = AMSwap_Preset::get();
 		$users   = array( AMSwap_Order_Store::DEFAULT_PROFILE => array() );
 
-		$query = get_users(
+		$query = new WP_User_Query(
 			array(
 				'capability__in' => self::dashboard_caps(),
 				'number'         => 500,
+				'count_total'    => true,
 			)
 		);
 
-		foreach ( $query as $user ) {
+		$found = (array) $query->get_results();
+
+		foreach ( $found as $user ) {
 			$users[ AMSwap_Order_Store::profile_for_user( $user ) ][] = $user->user_login;
 		}
+
+		$capped = (int) $query->get_total() > count( $found );
 
 		if ( AMSwap_Order_Store::has_saved() ) {
 			$default_source = 'saved';
@@ -130,6 +140,7 @@ class AMSwap_Menu_Model {
 				'source' => $default_source,
 				'users'  => array_slice( $users[ AMSwap_Order_Store::DEFAULT_PROFILE ], 0, 50 ),
 				'count'  => count( $users[ AMSwap_Order_Store::DEFAULT_PROFILE ] ),
+				'capped' => $capped,
 			),
 		);
 
@@ -146,6 +157,7 @@ class AMSwap_Menu_Model {
 				'source' => isset( $sources[ $role ] ) ? $sources[ $role ] : 'inherit',
 				'users'  => array_slice( isset( $users[ $role ] ) ? $users[ $role ] : array(), 0, 50 ),
 				'count'  => isset( $users[ $role ] ) ? count( $users[ $role ] ) : 0,
+				'capped' => $capped,
 			);
 		}
 

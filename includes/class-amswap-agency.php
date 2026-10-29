@@ -17,7 +17,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * An administrator is an agency account when their email address is on one
  * of the agency domains or when they were picked by hand. Super admins on a
  * multisite always are. As long as no account on the site qualifies, every
- * administrator counts as one, so a site can never lock everybody out.
+ * administrator counts as one, so a site can never lock everybody out. On a
+ * multisite with super admins that fallback never applies: a super admin can
+ * always reach the page, so a subsite's own administrators stay clients.
+ *
+ * Agency accounts keep the menu settings out of clients' everyday reach.
+ * They are not a security boundary against other administrators: any
+ * administrator can add a user on an agency domain, change an email address
+ * or deactivate the plugin.
  */
 class AMSwap_Agency {
 
@@ -25,6 +32,13 @@ class AMSwap_Agency {
 	 * Option holding the agency domains and picked user IDs. Not autoloaded.
 	 */
 	const OPTION = 'amswap_agency';
+
+	/**
+	 * Transient caching whether any account qualifies: '1' or '0', so a
+	 * cached false is told apart from a miss, then ':' and a hash of the
+	 * settings the answer belongs to.
+	 */
+	const ANY_TRANSIENT = 'amswap_any_agency';
 
 	/**
 	 * Agency domains until others are saved.
@@ -37,6 +51,43 @@ class AMSwap_Agency {
 	 * @var bool|null
 	 */
 	protected static $any = null;
+
+	/**
+	 * Forget the cached answer whenever an account could start or stop
+	 * qualifying. Registered everywhere, not only in wp-admin, as users are
+	 * also added and changed on the front end, over REST and from WP-CLI.
+	 */
+	public static function register() {
+		$hooks = array(
+			'profile_update',
+			'user_register',
+			'deleted_user',
+			'set_user_role',
+			'add_user_role',
+			'remove_user_role',
+			'add_user_to_blog',
+			'remove_user_from_blog',
+			'granted_super_admin',
+			'revoked_super_admin',
+			// The option written without save(), e.g. by wp option update.
+			'add_option_' . self::OPTION,
+			'update_option_' . self::OPTION,
+			'delete_option_' . self::OPTION,
+		);
+
+		foreach ( $hooks as $hook ) {
+			add_action( $hook, array( __CLASS__, 'forget' ) );
+		}
+	}
+
+	/**
+	 * Drop the cached answer of any_agency_account().
+	 */
+	public static function forget() {
+		self::$any = null;
+
+		delete_transient( self::ANY_TRANSIENT );
+	}
 
 	/**
 	 * The agency settings.
@@ -76,7 +127,7 @@ class AMSwap_Agency {
 	 * @return bool Whether the option was updated.
 	 */
 	public static function save( $domains, $users ) {
-		self::$any = null;
+		self::forget();
 
 		return update_option(
 			self::OPTION,
@@ -139,33 +190,89 @@ class AMSwap_Agency {
 	}
 
 	/**
-	 * Whether at least one administrator qualifies by domain or by being picked.
+	 * Whether at least one administrator qualifies by domain or by being
+	 * picked. Always true on a multisite with super admins.
+	 *
+	 * is_agency() asks this on every admin page of an administrator who does
+	 * not qualify, so the answer for the saved settings is kept in a
+	 * transient as well as per request.
 	 *
 	 * @param array|null $settings Settings to test, default the saved ones.
 	 * @return bool
 	 */
 	public static function any_agency_account( $settings = null ) {
-		$cache = null === $settings;
+		// A super admin can always reach the page, so the fallback must not
+		// hand the settings to every administrator of a subsite.
+		if ( is_multisite() && ! empty( get_super_admins() ) ) {
+			return true;
+		}
 
-		if ( $cache && null !== self::$any ) {
+		if ( null !== $settings ) {
+			return self::find_agency_account( $settings );
+		}
+
+		if ( null !== self::$any ) {
 			return self::$any;
 		}
 
-		$settings = $cache ? self::get() : $settings;
-		$any      = false;
+		// The answer is stored with a hash of the settings it was worked out
+		// for, so a changed amswap_agency_domains filter is seen at once.
+		$settings = self::get();
+		$hash     = md5( (string) wp_json_encode( $settings ) );
+		$cached   = explode( ':', (string) get_transient( self::ANY_TRANSIENT ), 2 );
 
-		foreach ( self::administrators() as $user ) {
-			if ( self::qualifies( $user, $settings ) ) {
-				$any = true;
-				break;
+		if ( 2 === count( $cached ) && $hash === $cached[1] && ( '1' === $cached[0] || '0' === $cached[0] ) ) {
+			self::$any = '1' === $cached[0];
+
+			return self::$any;
+		}
+
+		self::$any = self::find_agency_account( $settings );
+
+		// Only an hour: capability changes that fire none of the hooks in
+		// register() (a role editor, add_cap()) are picked up within it.
+		set_transient( self::ANY_TRANSIENT, ( self::$any ? '1' : '0' ) . ':' . $hash, HOUR_IN_SECONDS );
+
+		return self::$any;
+	}
+
+	/**
+	 * Look for an administrator who qualifies, without caching. Picked users
+	 * are checked one by one and each domain with a single query, so the
+	 * answer does not depend on how many administrators the site has.
+	 *
+	 * @param array $settings Settings from get().
+	 * @return bool
+	 */
+	protected static function find_agency_account( $settings ) {
+		foreach ( $settings['users'] as $user_id ) {
+			$user = get_userdata( (int) $user_id );
+
+			if ( $user instanceof WP_User && user_can( $user, 'manage_options' ) ) {
+				return true;
 			}
 		}
 
-		if ( $cache ) {
-			self::$any = $any;
+		foreach ( $settings['domains'] as $domain ) {
+			$ids = get_users(
+				array(
+					'capability'     => 'manage_options',
+					'search'         => '*@' . $domain,
+					'search_columns' => array( 'user_email' ),
+					'number'         => 1,
+					'fields'         => 'ID',
+				)
+			);
+
+			// The search is a LIKE match; qualifies() has the final say.
+			$user = empty( $ids ) ? false : get_userdata( (int) reset( $ids ) );
+
+			if ( $user instanceof WP_User && self::qualifies( $user, $settings ) ) {
+				return true;
+			}
 		}
 
-		return $any;
+		return false;
 	}
 
 	/**

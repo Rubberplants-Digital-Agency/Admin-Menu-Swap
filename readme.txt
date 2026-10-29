@@ -4,7 +4,7 @@ Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,7 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 * Menu profiles per role: each role (Administrator, Editor, Shop Manager, ...) can hide its own items and follow the default order or have its own. Agency accounts (an email domain, default rubberplants.nl, or picked administrators) always get the default menu and are the only ones who can open the settings page.
 * Abilities for MCP clients and the Abilities REST API (WordPress 6.9+): `amswap/get-menu`, `amswap/update-menu-order`, `amswap/reset-menu-order`.
 * WP-CLI: `wp amswap list`, `wp amswap refresh`, `wp amswap reset`, `wp amswap agency`.
-* Can be built into a site plugin: require `admin-menu-swap.php` from the site plugin's own copy. When several copies are present, the newest one runs.
+* Can be built into a site plugin: put a copy in its own `admin-menu-swap/` folder inside the site plugin (`site-plugin/admin-menu-swap/admin-menu-swap.php`) and require that file. When several copies are present, the newest one runs.
 * Without a preset, nothing changes until you save. The plugin does keep a small snapshot of the menu (option `amswap_menu_snapshot`) whenever an administrator opens wp-admin, so the abilities and WP-CLI know which items exist.
 * Uses the WordPress core `menu_order` filter — cooperates with, rather than overwrites, the admin menu.
 
@@ -33,7 +33,7 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 2. Upload it under Plugins → Add New → Upload Plugin and activate it.
 3. The Rubberplants preset orders the menu right away. Go to **Settings → Menu Order** to change it.
 
-Updates come from the GitHub releases and show under Dashboard → Updates like any other plugin's, auto-updates included.
+Updates come from the GitHub releases and show under Dashboard → Updates like any other plugin's, auto-updates included. Install only from the `admin-menu-swap.zip` release asset, so the plugin sits in a folder named `admin-menu-swap`: GitHub's "Source code" zips unpack to another folder name (such as `Admin-Menu-Swap-main`) and do not get updates.
 
 == Frequently Asked Questions ==
 
@@ -43,7 +43,11 @@ Its menu items (and its own separators) appear at the bottom of the menu until y
 
 = How do updates work? =
 
-The plugin header names the GitHub repository as its Update URI, so WordPress asks the plugin, not wordpress.org, whether a new version exists. The plugin looks up the latest release (cached for 12 hours; "Check again" under Dashboard → Updates skips the cache) and offers its admin-menu-swap.zip. Releases are published by tagging v<version>; a GitHub Action builds the zip.
+The plugin header names the GitHub repository as its Update URI, so WordPress asks the plugin, not wordpress.org, whether a new version exists. The plugin looks up the latest release (cached for 12 hours; "Check again" under Dashboard → Updates skips the cache) and offers its admin-menu-swap.zip. Releases are published by tagging v<version> on main; a GitHub Action builds the zip.
+
+Each release carries two files built by that Action: admin-menu-swap.zip and info.json, with the required WordPress and PHP versions, the tested WordPress version and the changelog that "View details" shows. A release without a valid info.json, or with files not uploaded by the Action, is not offered. Only the plugin in `wp-content/plugins/admin-menu-swap/` is updated, never a copy built into another plugin.
+
+To check for updates the plugin sends GitHub nothing but the user agent `Admin-Menu-Swap/<version>`: no site URL or other site data. GitHub does see the server's IP address, as with any request.
 
 = Can I switch the built-in preset off? =
 
@@ -55,11 +59,17 @@ Agency accounts get the default menu. Everybody else gets the profile of their h
 
 = What is an agency account? =
 
-An administrator whose email address is on an agency domain (default rubberplants.nl), or who is ticked under Agency accounts on the settings page (or added with `wp amswap agency add <user>`). Super admins on a multisite always are. As long as no administrator qualifies, every administrator counts as one, so nobody is ever locked out of the settings page. The page refuses a change that would take away your own access.
+An administrator whose email address is on an agency domain (default rubberplants.nl), or who is ticked under Agency accounts on the settings page (or added with `wp amswap agency add <user>`). As long as no administrator qualifies, every administrator counts as one, so nobody is ever locked out of the settings page. The page refuses a change that would take away your own access.
+
+On a multisite, super admins always are agency accounts, so the "every administrator counts" fallback does not apply there: a subsite's own administrators only become agency accounts by email domain or by being ticked.
+
+Agency accounts keep the menu settings out of clients' everyday reach. They are not a security boundary against other administrators: any administrator can add a user on an agency domain, change an email address or deactivate the plugin. Switch the default domain off with `add_filter( 'amswap_agency_domains', '__return_empty_array' );`.
 
 = How do presets and the saved order work together? =
 
 A preset orders the menu as long as nothing is saved. The settings page shows the preset's result; saving there turns it into your own order, which the preset no longer touches. "Reset to preset" deletes the saved order and the preset applies again.
+
+The preset's role profiles work per role: each applies until that role's own profile is saved, even when the default menu is saved. With the built-in preset this means that on a site with an agency account, other administrators do not see the developer and WPMU DEV items (such as Plugins, Tools and Settings) until you save the Administrator profile the way you want it. The pages stay reachable by their URL.
 
 = Why does "wp amswap refresh" need --exec? =
 
@@ -67,7 +77,17 @@ Plugins only register their admin menus in wp-admin, so WordPress has to load as
 
 = The plugin and a site plugin both contain Admin Menu Swap. Which one runs? =
 
-The newest version; with equal versions, one of them. Copies older than 1.3.0 always run themselves, and a 1.3 copy then steps aside. Activating a pre-1.3 copy while a 1.3 copy is running fails safely (WordPress reports a fatal error and leaves it inactive): update that copy instead. Uninstalling the plugin keeps the saved order while a built-in copy is active.
+The newest version; with equal versions, one of them. Copies older than 1.3.0 always run themselves, and a 1.3 copy then steps aside. Activating a pre-1.3 copy while a 1.3 copy is running fails safely (WordPress reports a fatal error and leaves it inactive): update that copy instead.
+
+A built-in copy must sit in its own folder two levels deep (`site-plugin/admin-menu-swap/admin-menu-swap.php`). WordPress does not list a file that deep as a plugin, so it never tries to update or delete it on its own.
+
+= What does uninstalling remove? =
+
+Deleting the plugin removes its saved menu order, profiles, agency settings and menu snapshot. While another active plugin on the site has Admin Menu Swap built in, nothing is removed, because that copy still uses these settings. On multisite, each subsite where such a plugin is active keeps its settings. Version 1.6.1 or later notes a built-in copy the first time an administrator opens that subsite's dashboard, so after updating, open the dashboard of each such subsite once before you uninstall from the network admin.
+
+= What do the abilities share with an MCP client? =
+
+`amswap/get-menu` returns the menu and the number of users each profile applies to. User logins are personal data the menu does not need, so they are only included when you pass `include_users: true`. `amswap/update-menu-order` overwrites the profile's saved order (and its hidden items when you send them); to undo it, send the previous settings again, so get them first with `amswap/get-menu`. Because it is marked destructive, the Abilities REST API runs it with the DELETE method.
 
 = Does it work on multisite? =
 
@@ -99,8 +119,26 @@ Admin Menu Swap registers its `menu_order` filter at a very late priority, so it
 
 == Changelog ==
 
+= 1.6.1 =
+* Updates are only offered to the plugin in the `admin-menu-swap` folder, never to a copy built into another plugin (updating such a copy could delete that plugin's folder).
+* Update checks no longer send the site's URL to GitHub, and time out after 3 seconds in wp-admin.
+* "View details" shows the full changelog and the real required and tested versions, read from a new info.json release asset.
+* Only release files uploaded by the release workflow are installed. Releases are only built from version tags on main.
+* Multisite: subsite administrators no longer all count as agency accounts when none of them qualifies; super admins always do.
+* Whether an agency account exists no longer depends on the first 200 administrators, and the answer is cached for an hour.
+* Picked agency accounts are no longer dropped when the agency form is saved on sites with many administrators.
+* Role profiles whose key has capitals (such as Shop_Support) can be edited. An unknown profile in the URL shows a warning, and saving or resetting a profile that no longer exists is refused instead of changing the default menu.
+* On sites with more than 500 dashboard users, profile counts are shown as a lower bound (such as "37+").
+* Abilities: `amswap/get-menu` leaves user logins out unless `include_users` is true. `amswap/update-menu-order` is marked destructive (DELETE over REST) and no longer fails on items of deactivated plugins that a profile already holds.
+* WP-CLI: `wp amswap agency add/remove` reads only digits as a user ID, falls back to the login and the email, and names the accounts it changed.
+* The menu snapshot is no longer rewritten on every page when administrators use different languages.
+* Uninstalling keeps the settings while a copy older than 1.3 is active, and on multisite keeps them on subsites where a built-in copy is active.
+* Translations load when the plugin is built into a must-use plugin.
+* Fixed the arrow on the Agency accounts section.
+* Added the GPL-2.0 license text.
+
 = 1.6.0 =
-* The Rubberplants preset is now built in and applies by default (switch it off with the amswap_use_default_preset filter).
+* The Rubberplants preset is now built in and applies by default (switch it off with the amswap_use_default_preset filter). Its role profiles also apply on sites that already saved a default menu: other administrators than agency accounts no longer see the developer and WPMU DEV items until their profile is saved.
 * Updates from GitHub releases through WordPress' Update URI: new versions show under Dashboard → Updates, with "View details" and auto-updates.
 * Releases are built by a GitHub Action from a tag v<version>.
 
