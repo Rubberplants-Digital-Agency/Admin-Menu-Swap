@@ -71,9 +71,9 @@ class AMSwap_Menu_Reorder {
 	 * Paint the menu separators in the saved color.
 	 *
 	 * Core draws each separator as a transparent 2px div.separator inside
-	 * its row, so a background color on that div turns it into a visible
-	 * line. Like the reordering, this stays out of the
-	 * network and user admin, whose menus this plugin never touches.
+	 * its row, so a 1px bottom border on that div, pushed down a little,
+	 * turns it into a visible line. Like the reordering, this stays out of
+	 * the network and user admin, whose menus this plugin never touches.
 	 */
 	public function print_separator_css() {
 		if ( is_network_admin() || is_user_admin() ) {
@@ -88,7 +88,7 @@ class AMSwap_Menu_Reorder {
 
 		// The id lets the settings page swap the rule for a live preview.
 		printf(
-			'<style id="amswap-separator-css">#adminmenu li.wp-menu-separator div.separator { background-color: %s; }</style>' . "\n",
+			'<style id="amswap-separator-css">#adminmenu li.wp-menu-separator div.separator { border-bottom: 1px solid %s; margin-top: 5px; }</style>' . "\n",
 			esc_html( $saved['separator_color'] )
 		);
 	}

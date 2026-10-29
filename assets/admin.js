@@ -48,6 +48,9 @@
 		$list.sortable( {
 			axis: 'y',
 			handle: '.amswap-handle',
+			// The default cancel list includes "button", which would swallow
+			// every mousedown on the handle (a button, for keyboard moves).
+			cancel: 'input, textarea, select, option, button:not(.amswap-handle)',
 			placeholder: 'amswap-placeholder',
 			forcePlaceholderSize: true,
 			cursor: 'move',
@@ -102,7 +105,7 @@
 				document.head.appendChild( style );
 			}
 
-			style.textContent = color ? '#adminmenu li.wp-menu-separator div.separator { background-color: ' + color + '; }' : '';
+			style.textContent = color ? '#adminmenu li.wp-menu-separator div.separator { border-bottom: 1px solid ' + color + '; margin-top: 5px; }' : '';
 
 			if ( color ) {
 				$list[ 0 ].style.setProperty( '--amswap-separator', color );
