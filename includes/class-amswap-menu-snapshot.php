@@ -65,10 +65,10 @@ class AMSwap_Menu_Snapshot {
 			return;
 		}
 
-		global $menu;
+		global $menu, $submenu;
 
 		if ( is_array( $menu ) ) {
-			self::$raw = self::items_from_menu( $menu );
+			self::$raw = self::items_from_menu( $menu, is_array( $submenu ) ? $submenu : array() );
 		}
 	}
 
@@ -234,16 +234,20 @@ class AMSwap_Menu_Snapshot {
 	/**
 	 * Turn $menu rows into plain items.
 	 *
-	 * @param array $menu The global $menu, or a copy of it.
+	 * @param array $menu    The global $menu, or a copy of it.
+	 * @param array $submenu The global $submenu, to note what each item's
+	 *                       pages need: core keeps an item for a user who may
+	 *                       open any of them, even without the item's own capability.
 	 * @return array[] {
-	 *     @type string $slug         Menu slug ($item[2]).
-	 *     @type string $title        Clean text title, '' for separators.
-	 *     @type string $icon         Raw icon value ($item[6]), '' for separators.
-	 *     @type bool   $is_separator Whether the row is a separator.
-	 *     @type string $capability   Capability the item needs ($item[1]).
+	 *     @type string   $slug         Menu slug ($item[2]).
+	 *     @type string   $title        Clean text title, '' for separators.
+	 *     @type string   $icon         Raw icon value ($item[6]), '' for separators.
+	 *     @type bool     $is_separator Whether the row is a separator.
+	 *     @type string   $capability   Capability the item needs ($item[1]).
+	 *     @type string[] $sub_caps     Capabilities of its submenu pages, without repeats.
 	 * }
 	 */
-	public static function items_from_menu( $menu ) {
+	public static function items_from_menu( $menu, $submenu = array() ) {
 		$items = array();
 
 		foreach ( $menu as $row ) {
@@ -254,6 +258,15 @@ class AMSwap_Menu_Snapshot {
 			}
 
 			$is_separator = AMSwap_Menu_Reorder::is_separator( $row );
+			$sub_caps     = array();
+
+			if ( ! $is_separator && isset( $submenu[ $slug ] ) && is_array( $submenu[ $slug ] ) ) {
+				foreach ( $submenu[ $slug ] as $sub ) {
+					if ( isset( $sub[1] ) && '' !== (string) $sub[1] ) {
+						$sub_caps[] = (string) $sub[1];
+					}
+				}
+			}
 
 			$items[] = array(
 				'slug'         => $slug,
@@ -261,6 +274,7 @@ class AMSwap_Menu_Snapshot {
 				'icon'         => ( $is_separator || ! isset( $row[6] ) ) ? '' : (string) $row[6],
 				'is_separator' => $is_separator,
 				'capability'   => isset( $row[1] ) ? (string) $row[1] : '',
+				'sub_caps'     => array_values( array_unique( $sub_caps ) ),
 			);
 		}
 

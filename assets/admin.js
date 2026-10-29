@@ -37,13 +37,48 @@
 		function markDirty() {
 			dirty = true;
 			$( '#amswap-dirty' ).prop( 'hidden', false );
+			markCollapsed();
 		}
 
+		// Counts what the role can open; the rest is folded away.
 		function updateCount() {
-			var $items = $list.children( 'li[data-separator="0"]' );
+			var $items = $list.children( 'li[data-separator="0"]' ).not( '.amswap-no-access' );
 
 			$( '#amswap-count' ).text( format( l10n.count, $items.length, $items.filter( '[data-hidden="1"]' ).length ) );
 		}
+
+		// Dim the separators core leaves out of the real menu, as it does with
+		// leading, doubled and trailing ones around the items it shows.
+		function markCollapsed() {
+			var $last    = null;
+			var previous = true;
+
+			$list.children( 'li' ).each( function() {
+				var $li = $( this );
+
+				if ( '1' === $li.attr( 'data-separator' ) ) {
+					$li.toggleClass( 'is-collapsed', previous ).attr( 'title', previous ? l10n.collapsed : null );
+					if ( ! previous ) {
+						$last = $li;
+					}
+					previous = true;
+				} else if ( '1' !== $li.attr( 'data-hidden' ) && ! $li.hasClass( 'amswap-no-access' ) ) {
+					previous = false;
+					$last    = null;
+				}
+			} );
+
+			if ( $last ) {
+				$last.addClass( 'is-collapsed' ).attr( 'title', l10n.collapsed );
+			}
+		}
+
+		// The rows a keyboard move steps over: the folded-away ones do not count.
+		function visibleRows() {
+			return $list.children( 'li:visible' );
+		}
+
+		markCollapsed();
 
 		$list.sortable( {
 			axis: 'y',
@@ -64,12 +99,12 @@
 			var $target;
 
 			if ( 'ArrowUp' === event.key ) {
-				$target = $li.prev( 'li' );
+				$target = $li.prevAll( 'li:visible' ).first();
 				if ( $target.length ) {
 					$li.insertBefore( $target );
 				}
 			} else if ( 'ArrowDown' === event.key ) {
-				$target = $li.next( 'li' );
+				$target = $li.nextAll( 'li:visible' ).first();
 				if ( $target.length ) {
 					$li.insertAfter( $target );
 				}
@@ -90,7 +125,7 @@
 			}, 600 );
 
 			markDirty();
-			wp.a11y.speak( format( l10n.moved, $li.index() + 1, $list.children( 'li' ).length ) );
+			wp.a11y.speak( format( l10n.moved, visibleRows().index( $li ) + 1, visibleRows().length ) );
 		} );
 
 		// Preview the separator color on the real admin menu next to the
@@ -143,7 +178,11 @@
 
 		$list.on( 'click', '.amswap-remove', function() {
 			var $li   = $( this ).closest( 'li' );
-			var $next = $li.next( 'li' ).length ? $li.next( 'li' ) : $li.prev( 'li' );
+			var $next = $li.nextAll( 'li:visible' ).first();
+
+			if ( ! $next.length ) {
+				$next = $li.prevAll( 'li:visible' ).first();
+			}
 
 			if ( '1' === $li.attr( 'data-core-separator' ) ) {
 				removed.push( $li.attr( 'data-slug' ) );
@@ -176,6 +215,17 @@
 
 			updateCount();
 			markDirty();
+		} );
+
+		// Unfold the items the role cannot open, or fold them away again.
+		// Not a change to the menu, so the page stays clean.
+		$( '#amswap-show-no-access' ).on( 'click', function() {
+			var $button = $( this );
+			var show    = 'true' !== $button.attr( 'aria-expanded' );
+
+			$list.toggleClass( 'is-showing-no-access', show );
+			$button.attr( 'aria-expanded', show ? 'true' : 'false' );
+			$button.find( '.amswap-show-no-access-label' ).text( $button.attr( show ? 'data-hide' : 'data-show' ) );
 		} );
 
 		$( '#amswap-form' ).on( 'submit', function() {

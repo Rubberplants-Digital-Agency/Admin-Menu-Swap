@@ -27,7 +27,7 @@ class AMSwap_Menu_Model {
 	 *     @type array      $settings Effective order, hidden, removed, separator_color, follows_default_order.
 	 *     @type array[]    $items    The menu in display order: slug, title, type, hidden, group.
 	 *     @type array|null $preset   Preset groups and unmatched slugs, or null without a preset.
-	 *     @type array[]    $profiles Every profile: key, label, source, users (logins it applies to),
+	 *     @type array[]    $profiles Every profile: key, label, source, users (logins of its users),
 	 *                                count and capped (see profiles()).
 	 *     @type array      $agency   Agency domains and the logins of the agency accounts.
 	 *     @type string     $notice   Advice when the snapshot is missing, else ''.
@@ -94,8 +94,11 @@ class AMSwap_Menu_Model {
 	}
 
 	/**
-	 * Every profile with where its settings come from and who it applies to.
+	 * Every profile with where its settings come from and whose it is.
 	 *
+	 * Each user belongs to one profile (see profile_of_user()): agency
+	 * accounts to the default, everyone else to their role, also when that
+	 * role has no profile yet and gets the default menu (source 'inherit').
 	 * Only users who can open the dashboard count (see dashboard_caps()), so
 	 * a shop's customers do not swell the lists. At most 500 of them are
 	 * looked at, as each one needs its profile worked out; on a larger site
@@ -122,7 +125,7 @@ class AMSwap_Menu_Model {
 		$found = (array) $query->get_results();
 
 		foreach ( $found as $user ) {
-			$users[ AMSwap_Order_Store::profile_for_user( $user ) ][] = $user->user_login;
+			$users[ self::profile_of_user( $user ) ][] = $user->user_login;
 		}
 
 		$capped = (int) $query->get_total() > count( $found );
@@ -162,6 +165,31 @@ class AMSwap_Menu_Model {
 		}
 
 		return $profiles;
+	}
+
+	/**
+	 * The profile a user belongs to: the one whose menu they get, or, when
+	 * that is the default menu only because their role has no profile yet,
+	 * that role, so its tab shows who saving a profile there would affect.
+	 * Agency accounts, and users without a role, belong to the default.
+	 *
+	 * @param WP_User $user User.
+	 * @return string Profile key.
+	 */
+	public static function profile_of_user( $user ) {
+		$profile = AMSwap_Order_Store::profile_for_user( $user );
+
+		if ( AMSwap_Order_Store::DEFAULT_PROFILE !== $profile || AMSwap_Agency::is_agency( $user ) ) {
+			return $profile;
+		}
+
+		foreach ( AMSwap_Order_Store::sort_roles( (array) $user->roles ) as $role ) {
+			if ( wp_roles()->is_role( $role ) ) {
+				return $role;
+			}
+		}
+
+		return AMSwap_Order_Store::DEFAULT_PROFILE;
 	}
 
 	/**

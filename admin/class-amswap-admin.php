@@ -127,6 +127,7 @@ class AMSwap_Admin {
 				/* translators: 1: new position, 2: number of rows. */
 				'moved'        => __( 'Moved to position %1$d of %2$d.', 'admin-menu-swap' ),
 				'leave'        => __( 'You have unsaved changes to the menu.', 'admin-menu-swap' ),
+				'collapsed'    => __( 'Not shown: there is no visible item between this separator and the one before it.', 'admin-menu-swap' ),
 			)
 		);
 	}
@@ -167,8 +168,23 @@ class AMSwap_Admin {
 			$removed_json = '[]';
 		}
 
-		$rows   = wp_list_filter( $items, array( 'is_separator' => false ) );
-		$hidden = wp_list_filter( $rows, array( 'is_hidden' => true ) );
+		// A role's list holds the items it cannot open too, folded away, so
+		// saving keeps their place; the count is of what the role can see.
+		$rows      = wp_list_filter( $items, array( 'is_separator' => false ) );
+		$no_access = count( wp_list_filter( $rows, array( 'no_access' => true ) ) );
+		$rows      = wp_list_filter( $rows, array( 'no_access' => false ) );
+		$hidden    = wp_list_filter( $rows, array( 'is_hidden' => true ) );
+
+		// Roles without a profile get this menu, but their users are counted
+		// on their own tabs.
+		$inheriting = array();
+		if ( $is_default ) {
+			foreach ( $profiles as $option ) {
+				if ( 'inherit' === $option['source'] && $option['count'] > 0 ) {
+					$inheriting[] = $option['label'];
+				}
+			}
+		}
 
 		// The list draws separators in the color the real menu uses (shared
 		// by every profile, so a role profile carries the default's).
@@ -212,7 +228,7 @@ class AMSwap_Admin {
 					</div>
 
 					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="amswap-form">
-						<ul id="amswap-menu-list" style="<?php echo esc_attr( $list_style ); ?>">
+						<ul id="amswap-menu-list" class="amswap-menu-list" style="<?php echo esc_attr( $list_style ); ?>">
 							<?php
 							foreach ( $items as $item ) {
 								$this->render_item( $item );
@@ -235,6 +251,21 @@ class AMSwap_Admin {
 						</button>
 						<span class="amswap-hint"><?php esc_html_e( 'Drag by the handle, or focus it and use the arrow keys.', 'admin-menu-swap' ); ?></span>
 					</div>
+
+					<?php if ( $no_access > 0 ) : ?>
+						<div class="amswap-menu-foot amswap-no-access-foot">
+							<?php
+							/* translators: %d: number of menu items the role cannot open. */
+							$show_label = sprintf( _n( 'Show %d item this role cannot open', 'Show %d items this role cannot open', $no_access, 'admin-menu-swap' ), $no_access );
+							?>
+							<button type="button" class="amswap-add" id="amswap-show-no-access" aria-expanded="false" aria-controls="amswap-menu-list"
+								data-show="<?php echo esc_attr( $show_label ); ?>"
+								data-hide="<?php esc_attr_e( 'Hide the items this role cannot open', 'admin-menu-swap' ); ?>">
+								<span class="dashicons dashicons-lock" aria-hidden="true"></span>
+								<span class="amswap-show-no-access-label"><?php echo esc_html( $show_label ); ?></span>
+							</button>
+						</div>
+					<?php endif; ?>
 				</section>
 
 				<aside class="amswap-side">
@@ -244,11 +275,20 @@ class AMSwap_Admin {
 							<?php
 							echo esc_html(
 								$is_default
-									? __( 'Agency accounts, and every role without a profile of its own. Users who cannot open the dashboard, such as shop customers, are left out.', 'admin-menu-swap' )
-									: __( 'Users with this role who are not agency accounts. The profile hides items on top of what the default menu hides.', 'admin-menu-swap' )
+									? __( 'Agency accounts. Every role without a profile of its own (a dashed tab) gets this menu too; its users are counted on its tab.', 'admin-menu-swap' )
+									: __( 'Users with this role who are not agency accounts. The list shows the menu as this role gets it; the profile hides items on top of what the default menu hides.', 'admin-menu-swap' )
 							);
 							?>
 						</p>
+
+						<?php if ( ! empty( $inheriting ) ) : ?>
+							<p class="amswap-muted">
+								<?php
+								/* translators: %s: comma-separated role names. */
+								echo esc_html( sprintf( __( 'Roles that use it now: %s.', 'admin-menu-swap' ), implode( ', ', $inheriting ) ) );
+								?>
+							</p>
+						<?php endif; ?>
 
 						<?php if ( ! empty( $current['users'] ) ) : ?>
 							<ul class="amswap-users">

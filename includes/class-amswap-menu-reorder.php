@@ -44,6 +44,13 @@ class AMSwap_Menu_Reorder {
 	const PROTECTED_SLUGS = array( 'options-general.php' );
 
 	/**
+	 * Top-level slugs core puts in the place of another for users who lack
+	 * its capability: whoever cannot list users gets Profile instead of
+	 * Users. Settings for the item apply to its stand-in as well.
+	 */
+	const SLUG_ALIASES = array( 'profile.php' => 'users.php' );
+
+	/**
 	 * The saved order handed to the menu_order filter.
 	 *
 	 * @var string[]
@@ -142,7 +149,7 @@ class AMSwap_Menu_Reorder {
 					continue;
 				}
 
-				if ( in_array( $slug, $saved['hidden'], true ) ) {
+				if ( self::in_list( $slug, $saved['hidden'] ) ) {
 					unset( $menu[ $key ] );
 				}
 			}
@@ -176,16 +183,37 @@ class AMSwap_Menu_Reorder {
 	/**
 	 * Hand core the saved order.
 	 *
-	 * Extra slugs that are not in $menu are harmless: sort_menu() only
-	 * does isset() lookups on the flipped array.
+	 * By now core has given an item whose own page the user cannot open the
+	 * slug of its first page they can open ($_wp_real_parent_file), and
+	 * Users may have become Profile, so each slug is followed by the slug
+	 * it stands under for this user. Extra slugs that are not in $menu are
+	 * harmless: sort_menu() only does isset() lookups on the flipped array.
 	 *
 	 * @param string[] $menu_order Incoming order (ignored).
 	 * @return string[]
 	 */
 	public function filter_menu_order( $menu_order ) {
+		global $_wp_real_parent_file;
+
 		unset( $menu_order );
 
-		return $this->saved_order;
+		$order    = array();
+		$stand_in = array_flip( self::SLUG_ALIASES );
+
+		foreach ( $this->saved_order as $slug ) {
+			$order[] = $slug;
+
+			if ( isset( $_wp_real_parent_file[ $slug ] ) && is_string( $_wp_real_parent_file[ $slug ] ) ) {
+				$order[] = $_wp_real_parent_file[ $slug ];
+			}
+
+			if ( isset( $stand_in[ $slug ] ) ) {
+				$order[] = $stand_in[ $slug ];
+			}
+		}
+
+		// A slug listed twice would take its later place in array_flip().
+		return array_values( array_unique( $order ) );
 	}
 
 	/**
@@ -228,6 +256,19 @@ class AMSwap_Menu_Reorder {
 	}
 
 	/**
+	 * Whether a slug, or the item it stands in for (see SLUG_ALIASES), is
+	 * in a list of slugs.
+	 *
+	 * @param string   $slug Menu slug.
+	 * @param string[] $list Slugs.
+	 * @return bool
+	 */
+	public static function in_list( $slug, $list ) {
+		return in_array( $slug, $list, true )
+			|| ( isset( self::SLUG_ALIASES[ $slug ] ) && in_array( self::SLUG_ALIASES[ $slug ], $list, true ) );
+	}
+
+	/**
 	 * Whether a slug is one this plugin refuses to hide.
 	 *
 	 * @param string $slug Menu slug.
@@ -267,7 +308,8 @@ class AMSwap_Menu_Reorder {
 	 * back on — the one respect in which this list is not WYSIWYG.
 	 *
 	 * A role profile is built from the menu snapshot instead, in that
-	 * profile's order, with the items the role cannot open flagged.
+	 * profile's order, with the items the role cannot open flagged and Users
+	 * as Profile when the role gets that instead.
 	 *
 	 * @param string $profile Profile key, default the default profile.
 	 * @return array[] {
@@ -327,18 +369,73 @@ class AMSwap_Menu_Reorder {
 		$role     = get_role( $profile );
 		$items    = array();
 
-		foreach ( AMSwap_Menu_Model::apply_to_items( $source, $settings, false ) as $item ) {
-			$is_separator = $item['is_separator'];
-			$capability   = isset( $item['capability'] ) ? (string) $item['capability'] : '';
+		// Core gives a role without list_users Profile in the place of Users,
+		// so show and save that, at the place Users has.
+		if ( ! self::role_can( $role, 'list_users' ) ) {
+			foreach ( $source as $index => $item ) {
+				if ( 'users.php' === $item['slug'] ) {
+					$source[ $index ] = array(
+						'slug'       => 'profile.php',
+						'title'      => __( 'Profile' ), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- core's own menu title.
+						'capability' => 'read',
+						'sub_caps'   => array(),
+					) + $item;
+				}
+			}
 
+			if ( ! in_array( 'profile.php', $settings['order'], true ) ) {
+				$settings['order'] = str_replace( 'users.php', 'profile.php', $settings['order'] );
+			}
+
+			if ( self::in_list( 'profile.php', $settings['hidden'] ) ) {
+				$settings['hidden'][] = 'profile.php';
+			}
+		}
+
+		foreach ( AMSwap_Menu_Model::apply_to_items( $source, $settings, false ) as $item ) {
 			$items[] = $item + array(
 				'is_custom'    => self::is_custom_separator( $item['slug'] ),
 				'is_hidden'    => ! empty( $item['hidden'] ),
 				'is_protected' => false,
-				'no_access'    => ! $is_separator && '' !== $capability && ( ! $role || ! $role->has_cap( $capability ) ),
+				'no_access'    => ! $item['is_separator'] && ! self::role_can_open( $role, $item ),
 			);
 		}
 
 		return $items;
+	}
+
+	/**
+	 * Whether a role can open a menu item, the way core decides it: with the
+	 * item's own capability, or with that of any of its submenu pages, in
+	 * which case core leads the item to the first page the user may open.
+	 *
+	 * @param WP_Role|null $role Role.
+	 * @param array        $item Item from AMSwap_Menu_Snapshot::items_from_menu().
+	 * @return bool
+	 */
+	protected static function role_can_open( $role, $item ) {
+		$caps = array_merge(
+			array( isset( $item['capability'] ) ? (string) $item['capability'] : '' ),
+			isset( $item['sub_caps'] ) ? (array) $item['sub_caps'] : array()
+		);
+
+		foreach ( $caps as $cap ) {
+			if ( '' === $cap || self::role_can( $role, $cap ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether a role has a capability.
+	 *
+	 * @param WP_Role|null $role Role.
+	 * @param string       $cap  Capability.
+	 * @return bool
+	 */
+	protected static function role_can( $role, $cap ) {
+		return $role instanceof WP_Role && $role->has_cap( $cap );
 	}
 }

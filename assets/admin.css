@@ -253,6 +253,16 @@
 	opacity: 0.6;
 }
 
+/* A role's list keeps what the role cannot open, folded away until asked. */
+.amswap-menu-list:not( .is-showing-no-access ) .amswap-no-access {
+	display: none;
+}
+
+/* A separator the real menu leaves out: nothing visible comes before it. */
+.amswap-separator.is-collapsed .amswap-sep-line {
+	opacity: 0.3;
+}
+
 /* Separators: the line the real menu draws. */
 .amswap-separator {
 	min-height: 26px;

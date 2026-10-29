@@ -117,7 +117,7 @@ class AMSwap_CLI {
 				WP_CLI::log(
 					sprintf(
 						/* translators: %s: comma-separated user logins. */
-						__( 'Applies to: %s', 'admin-menu-swap' ),
+						__( 'Users: %s', 'admin-menu-swap' ),
 						$logins
 					)
 				);

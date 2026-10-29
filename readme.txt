@@ -4,7 +4,7 @@ Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.1
+Stable tag: 1.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,6 +118,13 @@ WordPress draws each menu separator as an invisible line. Pick a color under Set
 Admin Menu Swap registers its `menu_order` filter at a very late priority, so its saved order wins. A plugin that force-disables `custom_menu_order` at an even later priority would disable sorting entirely; that is rare.
 
 == Changelog ==
+
+= 1.6.2 =
+* Each role's tab counts the users with that role, also while the role has no profile yet and gets the default menu. The default tab counts the agency accounts and names the roles that use it.
+* A role's list shows the menu as that role gets it: items the role cannot open (by the item's own capability or any of its pages) are folded away behind a button, and Users shows as Profile for roles that get Profile instead.
+* Separators the real menu leaves out (leading, doubled or trailing) are dimmed in the list.
+* Hiding and ordering Users now also apply to Profile, and an item core leads to another page for a role keeps its place in the order.
+* A notice names the file of an old copy (before 1.3) that runs in the place of the installed version.
 
 = 1.6.1 =
 * Updates are only offered to the plugin in the `admin-menu-swap` folder, never to a copy built into another plugin (updating such a copy could delete that plugin's folder).

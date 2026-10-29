@@ -98,14 +98,15 @@ msgstr ""
 
 #: admin/class-amswap-admin.php:247
 msgid ""
-"Agency accounts, and every role without a profile of its own. Users who "
-"cannot open the dashboard, such as shop customers, are left out."
+"Agency accounts. Every role without a profile of its own (a dashed tab) gets "
+"this menu too; its users are counted on its tab."
 msgstr ""
 
 #: admin/class-amswap-admin.php:248
 msgid ""
-"Users with this role who are not agency accounts. The profile hides items on"
-" top of what the default menu hides."
+"Users with this role who are not agency accounts. The list shows the menu as "
+"this role gets it; the profile hides items on top of what the default menu "
+"hides."
 msgstr ""
 
 #. %d: number of users not listed.
@@ -155,8 +156,8 @@ msgstr ""
 
 #: admin/class-amswap-admin.php:321
 msgid ""
-"Hiding takes an item out of the menu; its page stays reachable by URL. Roles"
-" and capabilities decide who may open it."
+"Hiding takes an item out of the menu; its page stays reachable by URL. Roles "
+"and capabilities decide who may open it."
 msgstr ""
 
 #: admin/class-amswap-admin.php:367
@@ -183,8 +184,8 @@ msgstr ""
 
 #: admin/class-amswap-admin.php:397
 msgid ""
-"Only administrators can be agency accounts, so this pick does not count "
-"until they are one again."
+"Only administrators can be agency accounts, so this pick does not count until"
+" they are one again."
 msgstr ""
 
 #: admin/class-amswap-admin.php:397
@@ -340,8 +341,8 @@ msgstr ""
 
 #: includes/class-amswap-abilities.php:58
 msgid ""
-"Menu profile: \"default\" (agency accounts and roles without a profile) or a"
-" role such as \"administrator\", \"editor\" or \"shop_manager\". amswap/get-"
+"Menu profile: \"default\" (agency accounts and roles without a profile) or a "
+"role such as \"administrator\", \"editor\" or \"shop_manager\". amswap/get-"
 "menu lists the profiles."
 msgstr ""
 
@@ -352,25 +353,27 @@ msgstr ""
 #: includes/class-amswap-abilities.php:65
 msgid ""
 "Returns the top-level WordPress admin menu of one profile (default: "
-"\"default\") in display order: each item's slug, title, whether it is hidden"
-" and its preset group. Also returns where the profile's settings come from "
-"(source: saved, preset, default, or inherit for a role that uses the default"
-" menu), its effective settings (order, hidden, removed separators, separator"
-" color, follows_default_order), the preset groups with the slugs no preset "
-"pattern names, every profile with the number of users it applies to (count; "
+"\"default\") in display order: each item's slug, title, whether it is hidden "
+"and its preset group. Also returns where the profile's settings come from "
+"(source: saved, preset, default, or inherit for a role that uses the default "
+"menu), its effective settings (order, hidden, removed separators, separator "
+"color, follows_default_order), the preset groups with the slugs no preset "
+"pattern names, every profile with the number of its users (count: the agency "
+"accounts for the default profile, and for a role its users who are not agency"
+" accounts, also while the role has no profile and gets the default menu; "
 "capped is true when count is a lower bound because the site has more users "
 "than were counted), the agency domains and the number of agency accounts "
-"(account_count; they always get the default profile) and the age of the menu"
-" snapshot. User logins (users per profile, at most 50, and the agency "
+"(account_count; they always get the default profile) and the age of the menu "
+"snapshot. User logins (users per profile, at most 50, and the agency "
 "accounts) are left out unless include_users is true. Use it before "
 "amswap/update-menu-order to get the exact slugs."
 msgstr ""
 
 #: includes/class-amswap-abilities.php:74
 msgid ""
-"Also return the user logins of each profile and of the agency accounts. "
-"These are personal data that the menu does not need, so leave this out "
-"unless asked who a profile applies to."
+"Also return the user logins of each profile and of the agency accounts. These"
+" are personal data that the menu does not need, so leave this out unless "
+"asked who a profile applies to."
 msgstr ""
 
 #: includes/class-amswap-abilities.php:134
@@ -379,23 +382,23 @@ msgstr ""
 
 #: includes/class-amswap-abilities.php:135
 msgid ""
-"Saves the top-level WordPress admin menu of one profile, as the settings "
-"page does. It overwrites the order the profile had saved, and its hidden "
-"items when hidden is given; separators of core and plugins that are left out"
-" of order are removed. There is no undo other than sending the previous "
-"order and hidden items again, so get them first with amswap/get-menu (or use"
-" amswap/reset-menu-order if its source was not saved). profile is "
-"\"default\" (agency accounts and roles without a profile) or a role. order "
-"lists every slug in the wanted order; put \"separator-amswap\" entries where"
-" a separator belongs (they are renumbered). For a role profile, leave order "
-"out (or set follow_default_order) to follow the default order and only set "
-"hidden. hidden replaces the hidden items; leave it out to keep the current "
-"ones. separator_color (#rrggbb, \"\" for the default) is shared and only "
-"accepted for the default profile. Slugs must exist in the menu (see "
-"amswap/get-menu); unknown slugs are refused, except those already in the "
-"profile's order or hidden items (such as the menu of a deactivated plugin), "
-"which are kept. Afterwards the preset no longer applies to that profile "
-"until amswap/reset-menu-order."
+"Saves the top-level WordPress admin menu of one profile, as the settings page"
+" does. It overwrites the order the profile had saved, and its hidden items "
+"when hidden is given; separators of core and plugins that are left out of "
+"order are removed. There is no undo other than sending the previous order and"
+" hidden items again, so get them first with amswap/get-menu (or use "
+"amswap/reset-menu-order if its source was not saved). profile is \"default\" "
+"(agency accounts and roles without a profile) or a role. order lists every "
+"slug in the wanted order; put \"separator-amswap\" entries where a separator "
+"belongs (they are renumbered). For a role profile, leave order out (or set "
+"follow_default_order) to follow the default order and only set hidden. hidden"
+" replaces the hidden items; leave it out to keep the current ones. "
+"separator_color (#rrggbb, \"\" for the default) is shared and only accepted "
+"for the default profile. Slugs must exist in the menu (see amswap/get-menu); "
+"unknown slugs are refused, except those already in the profile's order or "
+"hidden items (such as the menu of a deactivated plugin), which are kept. "
+"Afterwards the preset no longer applies to that profile until amswap/reset-"
+"menu-order."
 msgstr ""
 
 #: includes/class-amswap-abilities.php:142
@@ -415,8 +418,8 @@ msgstr ""
 
 #: includes/class-amswap-abilities.php:153
 msgid ""
-"Default profile only: separator color as #rrggbb, or \"\" for the admin "
-"color scheme default. Leave out to keep the current color."
+"Default profile only: separator color as #rrggbb, or \"\" for the admin color"
+" scheme default. Leave out to keep the current color."
 msgstr ""
 
 #: includes/class-amswap-abilities.php:186
@@ -425,10 +428,10 @@ msgstr ""
 
 #: includes/class-amswap-abilities.php:187
 msgid ""
-"Deletes the saved settings of one profile (default: \"default\"). The "
-"default profile then follows the site's preset again, or the WordPress "
-"default when there is none; a role profile follows the preset's profile for "
-"that role, or the default menu. Returns what applies now."
+"Deletes the saved settings of one profile (default: \"default\"). The default"
+" profile then follows the site's preset again, or the WordPress default when "
+"there is none; a role profile follows the preset's profile for that role, or "
+"the default menu. Returns what applies now."
 msgstr ""
 
 #: includes/class-amswap-abilities.php:288
@@ -496,7 +499,7 @@ msgstr ""
 #. %s: comma-separated user logins.
 #: includes/class-amswap-cli.php:120
 #, php-format
-msgid "Applies to: %s"
+msgid "Users: %s"
 msgstr ""
 
 #. %s: comma-separated menu slugs.
@@ -677,4 +680,33 @@ msgstr ""
 #. Author URI of the plugin
 #: admin-menu-swap.php
 msgid "https://rubberplants.nl/"
+msgstr ""
+
+#: admin/class-amswap-admin.php:130
+msgid ""
+"Not shown: there is no visible item between this separator and the one before"
+" it."
+msgstr ""
+
+#. %d: number of menu items the role cannot open.
+#: admin/class-amswap-admin.php:259
+msgid "Show %d item this role cannot open"
+msgid_plural "Show %d items this role cannot open"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-amswap-admin.php:263
+msgid "Hide the items this role cannot open"
+msgstr ""
+
+#. %s: comma-separated role names.
+#: admin/class-amswap-admin.php:288
+msgid "Roles that use it now: %s."
+msgstr ""
+
+#. 1: installed version, 2: version of the old copy, 3: file of the old copy.
+#: admin-menu-swap.php:85
+msgid ""
+"Admin Menu Swap %1$s is installed, but an old copy (%2$s) in %3$s runs "
+"instead. Delete that copy and %1$s takes over, with the saved menu."
 msgstr ""
