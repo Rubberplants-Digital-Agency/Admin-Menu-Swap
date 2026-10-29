@@ -3,11 +3,9 @@
  * The Rubberplants preset: the admin menu ordered by how often an item is
  * used and whether the client works with it, with plugin families together.
  *
- * Not loaded by default. A site plugin opts in with:
- *
- *     add_filter( 'amswap_preset', static function () {
- *         return require AMSWAP_PLUGIN_DIR . 'presets/rubberplants.php';
- *     } );
+ * The plugin's default preset (AMSwap_Preset::default_preset()). A site
+ * switches it off with add_filter( 'amswap_use_default_preset', '__return_false' ),
+ * or replaces it by returning its own preset from the amswap_preset filter.
  *
  * See AMSwap_Preset for the rules.
  *

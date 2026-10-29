@@ -60,6 +60,12 @@ class AMSwap_Plugin {
 			$abilities->register();
 		}
 
+		// WordPress checks for updates from cron as well as in wp-admin.
+		require_once AMSWAP_PLUGIN_DIR . 'includes/class-amswap-updater.php';
+
+		$updater = new AMSwap_Updater();
+		$updater->register();
+
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			require_once AMSWAP_PLUGIN_DIR . 'includes/class-amswap-cli.php';
 

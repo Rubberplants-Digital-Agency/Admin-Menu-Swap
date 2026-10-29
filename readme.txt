@@ -4,7 +4,7 @@ Tags: admin menu, reorder, drag and drop, hide, separators
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.2
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,15 +29,25 @@ Admin Menu Swap adds a **Settings → Menu Order** page where the current top-le
 
 == Installation ==
 
-1. Upload the `admin-menu-swap` folder to `/wp-content/plugins/`.
-2. Activate the plugin through the Plugins screen.
-3. Go to **Settings → Menu Order**, drag things around and save.
+1. Download `admin-menu-swap.zip` from the latest release (https://github.com/Rubberplants-Digital-Agency/Admin-Menu-Swap/releases/latest), or with WP-CLI: `wp plugin install https://github.com/Rubberplants-Digital-Agency/Admin-Menu-Swap/releases/latest/download/admin-menu-swap.zip --activate`.
+2. Upload it under Plugins → Add New → Upload Plugin and activate it.
+3. The Rubberplants preset orders the menu right away. Go to **Settings → Menu Order** to change it.
+
+Updates come from the GitHub releases and show under Dashboard → Updates like any other plugin's, auto-updates included.
 
 == Frequently Asked Questions ==
 
 = What happens when I activate a new plugin after saving an order? =
 
 Its menu items (and its own separators) appear at the bottom of the menu until you visit Settings → Menu Order and save again, which bakes them into your order. While a preset applies (nothing saved), the new items are grouped by the preset straight away.
+
+= How do updates work? =
+
+The plugin header names the GitHub repository as its Update URI, so WordPress asks the plugin, not wordpress.org, whether a new version exists. The plugin looks up the latest release (cached for 12 hours; "Check again" under Dashboard → Updates skips the cache) and offers its admin-menu-swap.zip. Releases are published by tagging v<version>; a GitHub Action builds the zip.
+
+= Can I switch the built-in preset off? =
+
+Yes: `add_filter( 'amswap_use_default_preset', '__return_false' );` leaves the WordPress menu as it is until you save an order. Return your own preset from the `amswap_preset` filter to replace it.
 
 = Who sees which menu? =
 
@@ -88,6 +98,11 @@ WordPress draws each menu separator as an invisible line. Pick a color under Set
 Admin Menu Swap registers its `menu_order` filter at a very late priority, so its saved order wins. A plugin that force-disables `custom_menu_order` at an even later priority would disable sorting entirely; that is rare.
 
 == Changelog ==
+
+= 1.6.0 =
+* The Rubberplants preset is now built in and applies by default (switch it off with the amswap_use_default_preset filter).
+* Updates from GitHub releases through WordPress' Update URI: new versions show under Dashboard → Updates, with "View details" and auto-updates.
+* Releases are built by a GitHub Action from a tag v<version>.
 
 = 1.5.2 =
 * Fixed: rows could not be dragged with the mouse. jQuery UI ignored presses on the handle because it is a button.

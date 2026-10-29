@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name:       Admin Menu Swap
- * Plugin URI:        https://rubberplants.nl/
+ * Plugin URI:        https://github.com/Rubberplants-Digital-Agency/Admin-Menu-Swap
  * Description:       Reorder the WordPress admin menu with drag and drop, hide items you never use, and add or remove separators to group menu items.
- * Version:           1.5.2
+ * Version:           1.6.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Rubberplants
@@ -12,6 +12,7 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       admin-menu-swap
  * Domain Path:       /languages
+ * Update URI:        https://github.com/Rubberplants-Digital-Agency/Admin-Menu-Swap
  *
  * @package Admin_Menu_Swap
  */
@@ -65,4 +66,4 @@ if ( ! function_exists( 'amswap_register_copy' ) ) {
 	add_action( 'plugins_loaded', 'amswap_load_newest_copy', 1 );
 }
 
-amswap_register_copy( '1.5.2', __FILE__ );
+amswap_register_copy( '1.6.0', __FILE__ );

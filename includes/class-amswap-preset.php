@@ -85,11 +85,13 @@ class AMSwap_Preset {
 	public static function get() {
 		/**
 		 * The preset that orders the menu as long as no order is saved.
-		 * Return null (the default) for no preset.
+		 * Default: the Rubberplants preset (presets/rubberplants.php), unless
+		 * amswap_use_default_preset returns false. Return another preset to
+		 * replace it, or null for none.
 		 *
 		 * @param array|null $preset See the class description for the shape.
 		 */
-		$preset = apply_filters( 'amswap_preset', null );
+		$preset = apply_filters( 'amswap_preset', self::default_preset() );
 
 		if ( ! is_array( $preset ) || empty( $preset['groups'] ) || ! is_array( $preset['groups'] ) ) {
 			return null;
@@ -139,6 +141,30 @@ class AMSwap_Preset {
 			'separator_color' => AMSwap_Order_Store::sanitize_color( isset( $preset['separator_color'] ) ? $preset['separator_color'] : '' ),
 			'profiles'        => $profiles,
 		);
+	}
+
+	/**
+	 * The preset the plugin ships with, read once per request.
+	 *
+	 * @return array|null The Rubberplants preset, or null when switched off.
+	 */
+	public static function default_preset() {
+		static $preset = false;
+
+		/**
+		 * Whether the plugin applies its own Rubberplants preset.
+		 *
+		 * @param bool $use Default true.
+		 */
+		if ( ! apply_filters( 'amswap_use_default_preset', true ) ) {
+			return null;
+		}
+
+		if ( false === $preset ) {
+			$preset = require AMSWAP_PLUGIN_DIR . 'presets/rubberplants.php';
+		}
+
+		return $preset;
 	}
 
 	/**

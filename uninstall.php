@@ -35,3 +35,5 @@ if ( is_multisite() ) {
 } else {
 	array_map( 'delete_option', $amswap_options );
 }
+
+delete_site_transient( 'amswap_latest_release' );
