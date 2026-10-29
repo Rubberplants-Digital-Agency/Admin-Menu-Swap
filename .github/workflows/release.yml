@@ -88,7 +88,11 @@ jobs:
           awk -v head="= ${GITHUB_REF_NAME#v} =" '$0 == head { found = 1; next } /^= / { if (found) exit } found' readme.txt > notes.md
           test -s notes.md || echo "See readme.txt." > notes.md
 
+      # Releases are immutable once published, so the files go onto a draft
+      # first and the draft is published with them.
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" admin-menu-swap.zip info.json --title "Admin Menu Swap ${GITHUB_REF_NAME#v}" --notes-file notes.md
+        run: |
+          gh release create "$GITHUB_REF_NAME" admin-menu-swap.zip info.json --draft --title "Admin Menu Swap ${GITHUB_REF_NAME#v}" --notes-file notes.md
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest
