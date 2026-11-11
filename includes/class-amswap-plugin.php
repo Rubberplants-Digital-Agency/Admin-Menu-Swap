@@ -22,13 +22,6 @@ class AMSwap_Plugin {
 	protected static $instance = null;
 
 	/**
-	 * The reorder engine.
-	 *
-	 * @var AMSwap_Menu_Reorder
-	 */
-	protected $reorder;
-
-	/**
 	 * Get the singleton.
 	 *
 	 * @return AMSwap_Plugin
@@ -82,8 +75,8 @@ class AMSwap_Plugin {
 			$snapshot = new AMSwap_Menu_Snapshot();
 			$snapshot->register();
 
-			$this->reorder = new AMSwap_Menu_Reorder();
-			$this->reorder->register();
+			$reorder = new AMSwap_Menu_Reorder();
+			$reorder->register();
 
 			$this->load_admin();
 		}

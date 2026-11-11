@@ -95,29 +95,28 @@
 
 		// Keyboard moves: the handle is a button; the arrow keys move its row.
 		$list.on( 'keydown', '.amswap-handle', function( event ) {
-			var $li = $( this ).closest( 'li' );
-			var $target;
+			var up = 'ArrowUp' === event.key;
 
-			if ( 'ArrowUp' === event.key ) {
-				$target = $li.prevAll( 'li:visible' ).first();
-				if ( $target.length ) {
-					$li.insertBefore( $target );
-				}
-			} else if ( 'ArrowDown' === event.key ) {
-				$target = $li.nextAll( 'li:visible' ).first();
-				if ( $target.length ) {
-					$li.insertAfter( $target );
-				}
-			} else {
+			if ( ! up && 'ArrowDown' !== event.key ) {
 				return;
 			}
 
 			event.preventDefault();
 
+			var $li     = $( this ).closest( 'li' );
+			var $target = ( up ? $li.prevAll( 'li:visible' ) : $li.nextAll( 'li:visible' ) ).first();
+
 			if ( ! $target.length ) {
 				return;
 			}
 
+			if ( up ) {
+				$li.insertBefore( $target );
+			} else {
+				$li.insertAfter( $target );
+			}
+
+			// Moving the row in the DOM can drop focus from its handle.
 			$( this ).trigger( 'focus' );
 			$li.addClass( 'is-moved' );
 			window.setTimeout( function() {

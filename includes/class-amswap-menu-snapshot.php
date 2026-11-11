@@ -168,15 +168,6 @@ class AMSwap_Menu_Snapshot {
 	}
 
 	/**
-	 * Delete the snapshot.
-	 *
-	 * @return bool
-	 */
-	public static function delete() {
-		return delete_option( self::OPTION );
-	}
-
-	/**
 	 * Build the admin menu in this request and store it.
 	 *
 	 * Plugins only register their menus when is_admin() is true, so WP_ADMIN

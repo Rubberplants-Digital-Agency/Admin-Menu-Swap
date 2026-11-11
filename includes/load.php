@@ -9,9 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Core requires. No Composer, no autoloader — plain includes.
- */
 require_once AMSWAP_PLUGIN_DIR . 'includes/class-amswap-agency.php';
 require_once AMSWAP_PLUGIN_DIR . 'includes/class-amswap-order-store.php';
 require_once AMSWAP_PLUGIN_DIR . 'includes/class-amswap-preset.php';

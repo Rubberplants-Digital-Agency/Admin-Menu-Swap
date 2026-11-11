@@ -22,7 +22,7 @@ class AMSwap_Order_Store {
 	/**
 	 * Option schema version. Bumped to 2 when the hidden list was added and
 	 * to 3 for the separator color; the shape is purely additive, so older
-	 * options are upgraded implicitly by the wp_parse_args() in get().
+	 * options are upgraded implicitly by the wp_parse_args() in normalize().
 	 */
 	const SCHEMA_VERSION = 3;
 
@@ -103,6 +103,16 @@ class AMSwap_Order_Store {
 			return self::defaults();
 		}
 
+		return self::normalize( $saved );
+	}
+
+	/**
+	 * Merge saved settings over the defaults and make every field its own type.
+	 *
+	 * @param array $saved Raw option value.
+	 * @return array Same shape as defaults().
+	 */
+	protected static function normalize( $saved ) {
 		$saved = wp_parse_args( $saved, self::defaults() );
 
 		foreach ( array( 'order', 'removed', 'hidden' ) as $list ) {
@@ -234,13 +244,7 @@ class AMSwap_Order_Store {
 			return null;
 		}
 
-		$saved = wp_parse_args( $all[ $profile ], self::defaults() );
-
-		foreach ( array( 'order', 'removed', 'hidden' ) as $list ) {
-			if ( ! is_array( $saved[ $list ] ) ) {
-				$saved[ $list ] = array();
-			}
-		}
+		$saved = self::normalize( $all[ $profile ] );
 
 		unset( $saved['separator_color'] );
 

@@ -387,7 +387,7 @@ class AMSwap_Menu_Reorder {
 				$settings['order'] = str_replace( 'users.php', 'profile.php', $settings['order'] );
 			}
 
-			if ( self::in_list( 'profile.php', $settings['hidden'] ) ) {
+			if ( ! in_array( 'profile.php', $settings['hidden'], true ) && self::in_list( 'profile.php', $settings['hidden'] ) ) {
 				$settings['hidden'][] = 'profile.php';
 			}
 		}

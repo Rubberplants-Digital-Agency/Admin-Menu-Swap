@@ -147,8 +147,10 @@ class AMSwap_Menu_Model {
 			),
 		);
 
-		foreach ( AMSwap_Order_Store::sort_roles( array_keys( wp_roles()->get_names() ) ) as $role ) {
-			$label = translate_user_role( wp_roles()->get_names()[ $role ] );
+		$names = wp_roles()->get_names();
+
+		foreach ( AMSwap_Order_Store::sort_roles( array_keys( $names ) ) as $role ) {
+			$label = translate_user_role( $names[ $role ] );
 
 			if ( isset( $preset['profiles'][ $role ]['label'] ) && 'preset' === ( $sources[ $role ] ?? '' ) ) {
 				$label = $preset['profiles'][ $role ]['label'];

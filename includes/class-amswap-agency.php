@@ -115,7 +115,7 @@ class AMSwap_Agency {
 
 		return array(
 			'domains' => self::sanitize_domains( (array) $domains ),
-			'users'   => array_values( array_unique( array_filter( array_map( 'absint', $users ) ) ) ),
+			'users'   => self::sanitize_users( $users ),
 		);
 	}
 
@@ -133,7 +133,7 @@ class AMSwap_Agency {
 			self::OPTION,
 			array(
 				'domains' => self::sanitize_domains( $domains ),
-				'users'   => array_values( array_unique( array_filter( array_map( 'absint', (array) $users ) ) ) ),
+				'users'   => self::sanitize_users( $users ),
 			),
 			false
 		);
@@ -288,6 +288,16 @@ class AMSwap_Agency {
 				'number'     => 200,
 			)
 		);
+	}
+
+	/**
+	 * Clean a list of user IDs: positive integers, without repeats.
+	 *
+	 * @param mixed $raw Raw list.
+	 * @return int[]
+	 */
+	protected static function sanitize_users( $raw ) {
+		return array_values( array_unique( array_filter( array_map( 'absint', (array) $raw ) ) ) );
 	}
 
 	/**
